@@ -43,9 +43,9 @@ module.exports = {
             harvester: 0,
             harvester0: 1,
             harvester1: 1,
-            carrier: 1,
+            carrier: 2,
             upgrader: 1,
-            builder: 1
+            builder: 2,
         };
         
         // Determine which role to spawn next
