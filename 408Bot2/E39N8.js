@@ -1,4 +1,32 @@
 module.exports = {
+    // Centralized role configurations - single source of truth
+    // 中文: 集中式角色配置 - 单一数据源
+    getRoleBodyConfigurations: function() {
+        return {
+            harvester: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 100*8+50+50*8=1250
+            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1250
+            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1250
+            carrier: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1000
+            carrierMineral: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 
+            upgrader: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY,CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1300
+            builder: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE] // 1300
+        };
+    },
+
+    // Get minimum creep counts for each role
+    // 中文: 获取每个角色的最小爬虫数量
+    getMinCreepCounts: function() {
+        return {
+            harvester: 0,
+            harvester0: 1,
+            harvester1: 1,
+            carrier: 2,
+            carrierMineral: 1,
+            upgrader: 1,
+            builder: 1,
+        };
+    },
+
     run:function() {
         // Count creeps by role (ordered by spawn priority)
         // 中文: 统计各角色的爬虫数量（按生成优先级排序）
@@ -7,20 +35,14 @@ module.exports = {
             harvester0: _.filter(Game.creeps, c => c.memory.role === 'harvester0').length,
             harvester1: _.filter(Game.creeps, c => c.memory.role === 'harvester1').length,
             carrier: _.filter(Game.creeps, c => c.memory.role === 'carrier').length,
+            carrierMineral: _.filter(Game.creeps, c => c.memory.role === 'carrierMineral').length,
             upgrader: _.filter(Game.creeps, c => c.memory.role === 'upgrader').length,
             builder: _.filter(Game.creeps, c => c.memory.role === 'builder').length
         };
         
         // Log current creep counts (ordered by spawn priority)
         // 中文: 输出当前各角色爬虫数量（按生成优先级排序）
-        /*
-        console.log(`Harvesters: ${creepCount.harvester}`);
-        console.log(`Harvester0s: ${creepCount.harvester0}`);
-        console.log(`Harvester1s: ${creepCount.harvester1}`);
-        console.log(`Carriers: ${creepCount.carrier}`);
-        console.log(`Upgraders: ${creepCount.upgrader}`);
-        console.log(`Builders: ${creepCount.builder}`);
-        */
+        this.logCreepStatistics(creepCount);
         // Spawn new creeps based on role counts
         // 中文: 根据角色数量生成新的爬虫
         const spawn = Game.spawns['E39N8'];
@@ -37,56 +59,30 @@ module.exports = {
             return;
         }
 
-        // Individual minimum number of creeps per role (ordered by spawn priority)
-        // 中文: 每个角色的最小爬虫数量（按生成优先级排序）
-        const minCreeps = {
-            harvester: 0,
-            harvester0: 1,
-            harvester1: 1,
-            carrier: 2,
-            upgrader: 1,
-            builder: 2,
-        };
+        // Get configurations from centralized source
+        // 中文: 从集中式数据源获取配置
+        const minCreeps = this.getMinCreepCounts();
+        const bodyConfigs = this.getRoleBodyConfigurations();
         
         // Determine which role to spawn next
         // 中文: 确定下一个要生成的角色
         let roleToSpawn;
-        // Define body configurations for each role
-        // 中文: 定义每个角色的身体配置
-        let creepBody;
         
-        // Prioritize spawning based on role shortages
-        // 中文: 根据角色短缺优先生成
-        switch (true) {
-            case creepCount.harvester < minCreeps.harvester:
-                roleToSpawn = 'harvester';
-                creepBody = [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE];
+        // Prioritize spawning based on role shortages (ordered by priority)
+        // 中文: 根据角色短缺优先生成（按优先级排序）
+        const rolesPriority = ['harvester', 'harvester0', 'harvester1', 'carrier', 'carrierMineral', 'upgrader', 'builder'];
+        
+        for (const role of rolesPriority) {
+            if (creepCount[role] < minCreeps[role]) {
+                roleToSpawn = role;
                 break;
-            case creepCount.harvester0 < minCreeps.harvester0:
-                roleToSpawn = 'harvester0';
-                creepBody = [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE];
-                break;
-            case creepCount.harvester1 < minCreeps.harvester1:
-                roleToSpawn = 'harvester1';
-                creepBody = [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE];
-                break;
-            case creepCount.carrier < minCreeps.carrier:
-                roleToSpawn = 'carrier';
-                creepBody = [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                break;
-            case creepCount.upgrader < minCreeps.upgrader:
-                roleToSpawn = 'upgrader';
-                creepBody = [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE];
-                break;
-            case creepCount.builder < minCreeps.builder:
-                roleToSpawn = 'builder';
-                creepBody = [WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE];
-                break;
+            }
         }
+        
         // Spawn the creep if a role is determined
         // 中文: 如果确定了角色则生成爬虫
         if (roleToSpawn) {
-            this.spawnCreep(spawn, roleToSpawn, creepBody);
+            this.spawnCreep(spawn, roleToSpawn, bodyConfigs[roleToSpawn]);
         }
         
         // Display spawning status
@@ -113,12 +109,11 @@ module.exports = {
     showSpawningStatus(spawn) {
         if (spawn.spawning) {
             const creep = Game.creeps[spawn.spawning.name];
-            spawn.room.visual.text(
-                `🛠️${creep.memory.role}`,
-                spawn.pos.x + 1,
-                spawn.pos.y,
-                { align: 'left', opacity: 0.8 }
-            );
+            // Display spawning status in console instead of room visual
+            // 在控制台而不是房间视觉中显示生成状态
+            if (Game.time % 10 === 0) { // Log every 10 ticks for spawning updates
+                console.log(`Spawning: ${creep.memory.role} (${spawn.spawning.name})`);
+            }
         }
     },
     
@@ -144,20 +139,15 @@ module.exports = {
             maxCapacity += structure.store.getCapacity(RESOURCE_ENERGY) || 0;
         });
         
-        // Display energy status in room visual
-        // 在房间视觉中显示能量状态
+        // Store energy data for combined output in logCreepStatistics
+        // 存储能量数据，在logCreepStatistics中合并输出
         const energyPercentage = maxCapacity > 0 ? Math.round((currentEnergy / maxCapacity) * 100) : 0;
-        room.visual.text(
-            `⚡ ${currentEnergy}/${maxCapacity} (${energyPercentage}%)`,
-            1, 1,
-            { align: 'left', opacity: 0.8, font: 0.6 }
-        );
-        
-        // Also log to console every 1500 ticks
-        // 每1500个tick也输出到控制台
-        if (Game.time % 1500 === 0) {
-            console.log(`Room ${room.name} Energy: ${currentEnergy}/${maxCapacity} (${energyPercentage}%)`);
-        }
+        this.roomEnergyData = {
+            name: room.name,
+            currentEnergy: currentEnergy,
+            maxCapacity: maxCapacity,
+            percentage: energyPercentage
+        };
     },
     
     // Function to display creep energy cost
@@ -204,19 +194,10 @@ module.exports = {
             });
         });
         
-        // Display creep energy cost in room visual
-        // 在房间视觉中显示爬虫能量花费
-        room.visual.text(
-            `👥 Creeps: ${roomCreeps.length} (${totalEnergyCost} energy)`,
-            1, 2,
-            { align: 'left', opacity: 0.8, font: 0.6 }
-        );
-        
-        // Also log to console every 1500 ticks
-        // 每1500个tick也输出到控制台
-        if (Game.time % 1500 === 0) {
-            console.log(`Room ${room.name} Creeps: ${roomCreeps.length} units, Total cost: ${totalEnergyCost} energy`);
-        }
+        // Display creep energy cost in console instead of room visual
+        // 在控制台而不是房间视觉中显示爬虫能量花费
+        // Removed: Room creeps count and total cost output
+        // 已移除：房间爬虫数量和总成本输出
         
         // Calculate energy efficiency ratio
         // 计算能量效率比
@@ -250,18 +231,140 @@ module.exports = {
         const efficiencyRatio = totalEnergyProduction > 0 ? (totalEnergyCost / totalEnergyProduction) : 0;
         const efficiencyPercentage = Math.round(efficiencyRatio * 100);
         
-        // Display efficiency in room visual
-        // 在房间视觉中显示效率
-        room.visual.text(
-            `📊 Efficiency: ${efficiencyPercentage}% (${totalEnergyCost}/${totalEnergyProduction})`,
-            1, 3,
-            { align: 'left', opacity: 0.8, font: 0.6 }
-        );
-        
-        // Also log to console every 1500 ticks
-        // 每1500个tick也输出到控制台
-        if (Game.time % 1500 === 0) {
-            console.log(`Room ${room.name} Energy Efficiency: ${efficiencyPercentage}% - Cost: ${totalEnergyCost}, Production: ${totalEnergyProduction} (${sourceCount} sources)`);
+        // Display efficiency in console instead of room visual
+        // 在控制台而不是房间视觉中显示效率
+        // Removed: Energy efficiency output
+        // 已移除：能量效率输出
+    },
+    
+    // Function to log detailed creep statistics with room energy status
+    // 中文: 记录详细爬虫统计信息和房间能量状态的函数
+    logCreepStatistics: function(creepCount) {
+        // Only log every 500 ticks to avoid spam
+        // 每500个tick记录一次以避免刷屏
+        if (Game.time % 500 === 0) {
+            console.log('=== E39N8 Room Status ===');
+            
+            // Display room energy status first
+            // 首先显示房间能量状态
+            if (this.roomEnergyData) {
+                console.log(`房间能量: ${this.roomEnergyData.currentEnergy}/${this.roomEnergyData.maxCapacity} (${this.roomEnergyData.percentage}%)`);
+                console.log('─'.repeat(50));
+            }
+            
+            console.log('角色统计 (按生成优先级排序):');
+            
+            // Get role configurations dynamically from spawn logic
+            // 从生成逻辑中动态获取角色配置
+            const roleConfigs = this.getRoleConfigurations();
+            
+            // Sort roles by priority
+            // 按优先级排序角色
+            const sortedRoles = Object.keys(roleConfigs).sort((a, b) => 
+                roleConfigs[a].priority - roleConfigs[b].priority
+            );
+            
+            let totalCreeps = 0;
+            let totalEnergyCost = 0;
+            
+            // Log each role's statistics
+            // 记录每个角色的统计信息
+            sortedRoles.forEach(role => {
+                const count = creepCount[role] || 0;
+                const config = roleConfigs[role];
+                const roleTotalCost = count * config.cost;
+                
+                totalCreeps += count;
+                totalEnergyCost += roleTotalCost;
+                
+                // Count body parts
+                // 统计身体部件
+                const bodyParts = this.countBodyParts(config.body);
+                const bodyPartsStr = Object.keys(bodyParts)
+                    .map(part => `${part}×${bodyParts[part]}`)
+                    .join(', ');
+                
+                console.log(`${role.padEnd(15)} | 数量: ${count.toString().padStart(2)} | 单体: ${bodyPartsStr} | 单价: ${config.cost} | 总计: ${roleTotalCost}`);
+            });
+            
+            console.log('─'.repeat(80));
+            console.log(`总计爬虫: ${totalCreeps} | 总能量消耗: ${totalEnergyCost}`);
+            console.log('='.repeat(30));
         }
+    },
+    
+    // Function to get role configurations dynamically from spawn logic
+    // 中文: 从生成逻辑中动态获取角色配置的函数
+    getRoleConfigurations: function() {
+        // This function uses the centralized body configurations
+        // 此函数使用集中式身体配置
+        const roleConfigs = {};
+        const minCreeps = this.getMinCreepCounts();
+        const bodyConfigs = this.getRoleBodyConfigurations();
+        
+        let priority = 1;
+        
+        // Generate configurations for all roles that have minimum counts > 0
+        // 为所有最小数量 > 0 的角色生成配置
+        const rolesPriority = ['harvester', 'harvester0', 'harvester1', 'carrier', 'carrierMineral', 'upgrader', 'builder'];
+        
+        rolesPriority.forEach(role => {
+            if (minCreeps[role] > 0 || role !== 'harvester') { // Include all roles except disabled harvester
+                roleConfigs[role] = {
+                    body: bodyConfigs[role],
+                    cost: this.calculateBodyCost(bodyConfigs[role]),
+                    priority: priority++
+                };
+            }
+        });
+        
+        return roleConfigs;
+    },
+    
+    // Function to calculate body cost dynamically
+    // 中文: 动态计算身体成本的函数
+    calculateBodyCost: function(bodyArray) {
+        let cost = 0;
+        bodyArray.forEach(part => {
+            switch(part) {
+                case WORK: cost += 100; break;
+                case CARRY: cost += 50; break;
+                case MOVE: cost += 50; break;
+                case ATTACK: cost += 80; break;
+                case RANGED_ATTACK: cost += 150; break;
+                case HEAL: cost += 250; break;
+                case TOUGH: cost += 10; break;
+                case CLAIM: cost += 600; break;
+                default: cost += 0; break;
+            }
+        });
+        return cost;
+    },
+    
+    // Function to count body parts
+    // 中文: 统计身体部件的函数
+    countBodyParts: function(bodyArray) {
+        const partCounts = {};
+        
+        bodyArray.forEach(part => {
+            // Convert body part constants to readable names
+            // 将身体部件常量转换为可读名称
+            let partName;
+            switch(part) {
+                case WORK: partName = 'WORK'; break;
+                case CARRY: partName = 'CARRY'; break;
+                case MOVE: partName = 'MOVE'; break;
+                case ATTACK: partName = 'ATTACK'; break;
+                case RANGED_ATTACK: partName = 'RANGED_ATTACK'; break;
+                case HEAL: partName = 'HEAL'; break;
+                case TOUGH: partName = 'TOUGH'; break;
+                case CLAIM: partName = 'CLAIM'; break;
+                default: partName = part.toString(); break;
+            }
+            
+            partCounts[partName] = (partCounts[partName] || 0) + 1;
+        });
+        
+        return partCounts;
     }
 };
