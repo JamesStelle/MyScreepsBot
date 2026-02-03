@@ -21,100 +21,131 @@ var roleHarvester0 = {
         // Execute current state
         // 中文: 执行当前状态
         if(creep.memory.delivering) {
-            // Delivering state: transfer energy to containers first, then spawn or extensions
-            // 中文: 传输状态：优先向容器传输能量，然后是孵化器或扩展结构
+            // Delivering state: transfer energy with priority order
+            // 中文: 传输状态：按优先级顺序传输能量
             
-            // Priority 1: Look for containers with free capacity near source[0]
-            // 优先级1：寻找 source[0] 附近有空余容量的容器
+            // Priority 0: Transfer to Links near source[0]
+            // 优先级0：向source[0]两格以内的Link传输能量
             var sources = creep.room.find(FIND_SOURCES);
-            var containers = [];
+            var linksNearSource0 = [];
             
             if(sources.length > 0 && sources[0]) {
-                containers = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
+                linksNearSource0 = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
                     filter: (structure) => {
-                        return structure.structureType == STRUCTURE_CONTAINER &&
+                        return structure.structureType == STRUCTURE_LINK &&
                                structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
                     }
                 });
             }
             
-            if(containers.length > 0) {
-                creep.say('📦 container');
-                if(creep.transfer(containers[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(containers[0], {visualizePathStyle: {stroke: '#ffaa00'}});
+            if(linksNearSource0.length > 0) {
+                // Sort by free capacity (highest first), then by distance (closest first)
+                // 按空余容量排序（最高优先），然后按距离排序（最近优先）
+                linksNearSource0.sort((a, b) => {
+                    var freeCapacityA = a.store.getFreeCapacity(RESOURCE_ENERGY);
+                    var freeCapacityB = b.store.getFreeCapacity(RESOURCE_ENERGY);
+                    if(freeCapacityB !== freeCapacityA) {
+                        return freeCapacityB - freeCapacityA;
+                    }
+                    return creep.pos.getRangeTo(a) - creep.pos.getRangeTo(b);
+                });
+                
+                creep.say('🔗 link');
+                if(creep.transfer(linksNearSource0[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                    creep.moveTo(linksNearSource0[0], {visualizePathStyle: {stroke: '#00ffff'}});
                 }
             }
-            // Priority 2: If containers exist but are not available, wait
-            // 优先级2：存在容器且容器不可用时，改为等待
+            // Priority 1: Look for containers with free capacity near source[0]
+            // 优先级1：寻找 source[0] 附近有空余容量的容器
             else {
-                // Check if containers exist near source[0] (regardless of capacity)
-                // 检查 source[0] 附近是否存在容器（不考虑容量）
-                var allContainers = [];
+                var containers = [];
+                
                 if(sources.length > 0 && sources[0]) {
-                    allContainers = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
+                    containers = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
                         filter: (structure) => {
-                            return structure.structureType == STRUCTURE_CONTAINER;
+                            return structure.structureType == STRUCTURE_CONTAINER &&
+                                   structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
                         }
                     });
                 }
                 
-                if(allContainers.length > 0) {
-                    // Containers exist but are full, repair them instead of waiting
-                    // 容器存在但已满，修复容器而不是等待
-                    var containersToRepair = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
-                        filter: (structure) => {
-                            return structure.structureType == STRUCTURE_CONTAINER &&
-                                   structure.hits < structure.hitsMax;
-                        }
-                    });
-                    
-                    if(containersToRepair.length > 0) {
-                        creep.say('🔧 repair');
-                        if(creep.repair(containersToRepair[0]) == ERR_NOT_IN_RANGE) {
-                            creep.moveTo(containersToRepair[0], {visualizePathStyle: {stroke: '#00ff00'}});
-                        }
-                    } else {
-                        // Containers are full and don't need repair, wait
-                        // 容器已满且不需要修复，等待
-                        creep.say('⏳ wait');
+                if(containers.length > 0) {
+                    creep.say('📦 container');
+                    if(creep.transfer(containers[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                        creep.moveTo(containers[0], {visualizePathStyle: {stroke: '#ffaa00'}});
                     }
                 }
-                // Priority 3: If no containers exist, transfer to spawn or extensions
-                // 优先级3：无容器时，则传输到孵化器或扩展结构
+                // Priority 2: If containers exist but are not available, wait
+                // 优先级2：存在容器且容器不可用时，改为等待
                 else {
-                    var targets = creep.room.find(FIND_STRUCTURES, {
+                    // Check if containers exist near source[0] (regardless of capacity)
+                    // 检查 source[0] 附近是否存在容器（不考虑容量）
+                    var allContainers = [];
+                    if(sources.length > 0 && sources[0]) {
+                        allContainers = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
                             filter: (structure) => {
-                                return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN) &&
-                                    structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+                                return structure.structureType == STRUCTURE_CONTAINER;
                             }
-                    });
-                    // Find the closest target and transfer energy
-                    // 中文: 寻找最近的目标并传输能量
-                    if(targets.length > 0) {
-                        creep.say('🏢 spawn/ext');
-                        if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                            creep.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                        });
+                    }
+                    
+                    if(allContainers.length > 0) {
+                        // Containers exist but are full, repair them instead of waiting
+                        // 容器存在但已满，修复容器而不是等待
+                        var containersToRepair = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
+                            filter: (structure) => {
+                                return structure.structureType == STRUCTURE_CONTAINER &&
+                                       structure.hits < structure.hitsMax;
+                            }
+                        });
+                        
+                        if(containersToRepair.length > 0) {
+                            creep.say('🔧 repair');
+                            if(creep.repair(containersToRepair[0]) == ERR_NOT_IN_RANGE) {
+                                creep.moveTo(containersToRepair[0], {visualizePathStyle: {stroke: '#00ff00'}});
+                            }
+                        } else {
+                            // Containers are full and don't need repair, wait
+                            // 容器已满且不需要修复，等待
+                            creep.say('⏳ wait');
                         }
                     }
-                    // If no targets available, repair containers near source[0]
-                    // 中文: 如果没有可用目标，修复 source[0] 附近的容器
+                    // Priority 3: If no containers exist, transfer to spawn or extensions
+                    // 优先级3：无容器时，则传输到孵化器或扩展结构
                     else {
-                        var sources = creep.room.find(FIND_SOURCES);
-                        var containers = [];
-                        
-                        if(sources.length > 0 && sources[0]) {
-                            containers = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
+                        var targets = creep.room.find(FIND_STRUCTURES, {
                                 filter: (structure) => {
-                                    return structure.structureType == STRUCTURE_CONTAINER &&
-                                           structure.hits < structure.hitsMax;
+                                    return (structure.structureType == STRUCTURE_EXTENSION || structure.structureType == STRUCTURE_SPAWN) &&
+                                        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
                                 }
-                            });
+                        });
+                        // Find the closest target and transfer energy
+                        // 中文: 寻找最近的目标并传输能量
+                        if(targets.length > 0) {
+                            creep.say('🏢 spawn/ext');
+                            if(creep.transfer(targets[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                creep.moveTo(targets[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                            }
                         }
-                        
-                        if(containers.length > 0) {
-                            creep.say('🔧 repair');
-                            if(creep.repair(containers[0]) == ERR_NOT_IN_RANGE) {
-                                creep.moveTo(containers[0], {visualizePathStyle: {stroke: '#00ff00'}});
+                        // If no targets available, repair containers near source[0]
+                        // 中文: 如果没有可用目标，修复 source[0] 附近的容器
+                        else {
+                            var repairContainers = [];
+                            
+                            if(sources.length > 0 && sources[0]) {
+                                repairContainers = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
+                                    filter: (structure) => {
+                                        return structure.structureType == STRUCTURE_CONTAINER &&
+                                               structure.hits < structure.hitsMax;
+                                    }
+                                });
+                            }
+                            
+                            if(repairContainers.length > 0) {
+                                creep.say('🔧 repair');
+                                if(creep.repair(repairContainers[0]) == ERR_NOT_IN_RANGE) {
+                                    creep.moveTo(repairContainers[0], {visualizePathStyle: {stroke: '#00ff00'}});
+                                }
                             }
                         }
                     }

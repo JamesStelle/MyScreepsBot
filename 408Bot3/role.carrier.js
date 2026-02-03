@@ -120,8 +120,8 @@ var roleCarrier = {
             }
         }
         else {
-            // Collecting state: gather energy from tombstones, ruins, dropped resources or containers
-            // 中文: 收集状态：从墓碑、废墟、掉落资源或容器收集能量
+            // Collecting state: gather energy with strict priority order
+            // 中文: 收集状态：按严格优先级顺序收集能量
             
             // Priority 1: Look for dropped resources with energy >= 50
             // 优先级1：寻找掉落的资源，能量 >= 50
@@ -132,13 +132,22 @@ var roleCarrier = {
             });
             
             if(droppedResources.length > 0) {
+                // Sort by amount (highest first), then by distance (closest first)
+                // 按资源量排序（最高优先），然后按距离排序（最近优先）
+                droppedResources.sort((a, b) => {
+                    if(b.amount !== a.amount) {
+                        return b.amount - a.amount;
+                    }
+                    return creep.pos.getRangeTo(a) - creep.pos.getRangeTo(b);
+                });
+                
                 creep.say('⚡ pickup');
                 if(creep.pickup(droppedResources[0]) == ERR_NOT_IN_RANGE) {
                     creep.moveTo(droppedResources[0], {visualizePathStyle: {stroke: '#ffff00'}});
                 }
             }
-            // Priority 2: Look for tombstones with energy
-            // 优先级2：寻找墓碑中的能量
+            // Priority 2: Look for tombstones with energy >= 50
+            // 优先级2：寻找墓碑中的能量 >= 50
             else {
                 var tombstones = creep.room.find(FIND_TOMBSTONES, {
                     filter: (tombstone) => {
@@ -147,13 +156,22 @@ var roleCarrier = {
                 });
                 
                 if(tombstones.length > 0) {
+                    // Sort by amount (highest first), then by distance (closest first)
+                    // 按资源量排序（最高优先），然后按距离排序（最近优先）
+                    tombstones.sort((a, b) => {
+                        if(b.store[RESOURCE_ENERGY] !== a.store[RESOURCE_ENERGY]) {
+                            return b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY];
+                        }
+                        return creep.pos.getRangeTo(a) - creep.pos.getRangeTo(b);
+                    });
+                    
                     creep.say('💀 tomb');
                     if(creep.withdraw(tombstones[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                         creep.moveTo(tombstones[0], {visualizePathStyle: {stroke: '#ff0000'}});
                     }
                 }
-                // Priority 3: Look for ruins with energy
-                // 优先级3：寻找废墟中的能量
+                // Priority 3: Look for ruins with energy >= 50
+                // 优先级3：寻找废墟中的能量 >= 50
                 else {
                     var ruins = creep.room.find(FIND_RUINS, {
                         filter: (ruin) => {
@@ -162,47 +180,87 @@ var roleCarrier = {
                     });
                     
                     if(ruins.length > 0) {
+                        // Sort by amount (highest first), then by distance (closest first)
+                        // 按资源量排序（最高优先），然后按距离排序（最近优先）
+                        ruins.sort((a, b) => {
+                            if(b.store[RESOURCE_ENERGY] !== a.store[RESOURCE_ENERGY]) {
+                                return b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY];
+                            }
+                            return creep.pos.getRangeTo(a) - creep.pos.getRangeTo(b);
+                        });
+                        
                         creep.say('🏚️ ruins');
                         if(creep.withdraw(ruins[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
                             creep.moveTo(ruins[0], {visualizePathStyle: {stroke: '#8B4513'}});
                         }
                     }
-                    // Priority 4: Look for containers with energy near sources
-                    // 优先级4：寻找能量源附近有能量的容器
+                    // Priority 3.5: Look for Links with energy near Storage
+                    // 优先级3.5：寻找Storage两格范围内有能量的Link
                     else {
+                        var storage = creep.room.storage;
+                        var linksNearStorage = [];
+                        
+                        if(storage) {
+                            linksNearStorage = storage.pos.findInRange(FIND_STRUCTURES, 2, {
+                                filter: (structure) => {
+                                    return structure.structureType == STRUCTURE_LINK &&
+                                           structure.store[RESOURCE_ENERGY] > 0;
+                                }
+                            });
+                        }
+                        
+                        if(linksNearStorage.length > 0) {
+                            // Sort by amount (highest first), then by distance (closest first)
+                            // 按资源量排序（最高优先），然后按距离排序（最近优先）
+                            linksNearStorage.sort((a, b) => {
+                                if(b.store[RESOURCE_ENERGY] !== a.store[RESOURCE_ENERGY]) {
+                                    return b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY];
+                                }
+                                return creep.pos.getRangeTo(a) - creep.pos.getRangeTo(b);
+                            });
+                            
+                            creep.say('🔗 link');
+                            if(creep.withdraw(linksNearStorage[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                creep.moveTo(linksNearStorage[0], {visualizePathStyle: {stroke: '#00ffff'}});
+                            }
+                        }
+                        // Priority 4: Look for containers with energy near sources
+                        // 优先级4：寻找能量源附近有能量的容器
+                        else {
                         var sources = creep.room.find(FIND_SOURCES);
                         var containers = [];
                         
-                        // Find containers near source[0] and source[1]
-                        // 寻找 source[0] 和 source[1] 附近的容器
-                        if(sources.length > 0 && sources[0]) {
-                            var containers0 = sources[0].pos.findInRange(FIND_STRUCTURES, 2, {
+                        // Find containers near all sources
+                        // 寻找所有能量源附近的容器
+                        sources.forEach(source => {
+                            var sourceContainers = source.pos.findInRange(FIND_STRUCTURES, 2, {
                                 filter: (structure) => {
                                     return structure.structureType == STRUCTURE_CONTAINER && 
                                            structure.store[RESOURCE_ENERGY] > 0;
                                 }
                             });
-                            containers = containers.concat(containers0);
-                        }
-                        
-                        if(sources.length > 1 && sources[1]) {
-                            var containers1 = sources[1].pos.findInRange(FIND_STRUCTURES, 2, {
-                                filter: (structure) => {
-                                    return structure.structureType == STRUCTURE_CONTAINER && 
-                                           structure.store[RESOURCE_ENERGY] > 0;
-                                }
-                            });
-                            containers = containers.concat(containers1);
-                        }
+                            containers = containers.concat(sourceContainers);
+                        });
                         
                         if(containers.length > 0) {
-                            // Sort containers by energy amount (highest first)
-                            // 按能量数量排序（最高的优先）
-                            containers.sort((a, b) => b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY]);
+                            // Remove duplicates (in case same container is near multiple sources)
+                            // 去除重复（防止同一容器靠近多个能量源）
+                            var uniqueContainers = containers.filter((container, index, self) => 
+                                index === self.findIndex(c => c.id === container.id)
+                            );
                             
-                            creep.say('📦 carry');
-                            if(creep.withdraw(containers[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                creep.moveTo(containers[0], {visualizePathStyle: {stroke: '#ffaa00'}});
+                            // Sort by amount (highest first), then by distance (closest first)
+                            // 按资源量排序（最高优先），然后按距离排序（最近优先）
+                            uniqueContainers.sort((a, b) => {
+                                if(b.store[RESOURCE_ENERGY] !== a.store[RESOURCE_ENERGY]) {
+                                    return b.store[RESOURCE_ENERGY] - a.store[RESOURCE_ENERGY];
+                                }
+                                return creep.pos.getRangeTo(a) - creep.pos.getRangeTo(b);
+                            });
+                            
+                            creep.say('📦 container');
+                            if(creep.withdraw(uniqueContainers[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                creep.moveTo(uniqueContainers[0], {visualizePathStyle: {stroke: '#ffaa00'}});
                             }
                         }
                         // No sources available, show debug info
@@ -213,6 +271,7 @@ var roleCarrier = {
                             creep.say(`E:${energy}/${capacity}`);
                         }
                     }
+                }
                 }
             }
         }
