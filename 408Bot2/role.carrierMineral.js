@@ -21,13 +21,57 @@ var roleCarrierMineral = {
         // Execute current state
         // 中文: 执行当前状态
         if(creep.memory.delivering) {
-            // Delivering state: transfer minerals to storage or terminal
-            // 中文: 传输状态：向存储或终端传输矿物
+            // Delivering state: transfer minerals to storage, terminal, or container (excluding source, extractor, and controller containers)
+            // 中文: 传输状态：向存储、终端或容器传输矿物（排除source容器、extractor容器和控制器容器）
             var targets = creep.room.find(FIND_STRUCTURES, {
                 filter: (structure) => {
-                    return (structure.structureType == STRUCTURE_STORAGE ||
-                           structure.structureType == STRUCTURE_TERMINAL) &&
-                           structure.store.getFreeCapacity() > 0;
+                    if (structure.structureType == STRUCTURE_STORAGE ||
+                        structure.structureType == STRUCTURE_TERMINAL) {
+                        return structure.store.getFreeCapacity() > 0;
+                    }
+                    
+                    if (structure.structureType == STRUCTURE_CONTAINER) {
+                        // Check if container is not within 2 range of sources
+                        // 检查容器是否不在source两格范围内
+                        var sources = creep.room.find(FIND_SOURCES);
+                        var isNearSource = false;
+                        
+                        for (let source of sources) {
+                            if (structure.pos.getRangeTo(source) <= 2) {
+                                isNearSource = true;
+                                break;
+                            }
+                        }
+                        
+                        // Check if container is not within 2 range of extractors
+                        // 检查容器是否不在extractor两格范围内
+                        var extractors = creep.room.find(FIND_STRUCTURES, {
+                            filter: (s) => s.structureType == STRUCTURE_EXTRACTOR
+                        });
+                        var isNearExtractor = false;
+                        
+                        for (let extractor of extractors) {
+                            if (structure.pos.getRangeTo(extractor) <= 2) {
+                                isNearExtractor = true;
+                                break;
+                            }
+                        }
+                        
+                        // Check if container is not within 2 range of controller
+                        // 检查容器是否不在控制器两格范围内
+                        var controller = creep.room.controller;
+                        var isNearController = false;
+                        
+                        if (controller && structure.pos.getRangeTo(controller) <= 2) {
+                            isNearController = true;
+                        }
+                        
+                        // Only use containers that are NOT within 2 range of sources, extractors, controller, and have free capacity
+                        // 只使用不在source两格范围内、不在extractor两格范围内、不在控制器两格范围内且有空间的容器
+                        return !isNearSource && !isNearExtractor && !isNearController && structure.store.getFreeCapacity() > 0;
+                    }
+                    
+                    return false;
                 }
             });
             

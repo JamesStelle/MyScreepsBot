@@ -1,8 +1,8 @@
+// Load configuration
+// 加载配置文件
+var config = require('config');
+
 module.exports = {
-    
-    // Whitelist of friendly players
-    // 友方玩家白名单
-    whitelist: ['MoSaSa'],
     
     /**
      * Main run function for Tower management
@@ -49,7 +49,7 @@ module.exports = {
         // 检查房间内是否有敌对爬虫（排除白名单玩家）
         const hostileCreeps = room.find(FIND_HOSTILE_CREEPS, {
             filter: (creep) => {
-                return !this.whitelist.includes(creep.owner.username);
+                return !config.whitelist.includes(creep.owner.username);
             }
         });
         
@@ -73,7 +73,7 @@ module.exports = {
     combatMode: function(tower) {
         const closestHostile = tower.pos.findClosestByRange(FIND_HOSTILE_CREEPS, {
             filter: (creep) => {
-                return !this.whitelist.includes(creep.owner.username);
+                return !config.whitelist.includes(creep.owner.username);
             }
         });
         if (closestHostile) {

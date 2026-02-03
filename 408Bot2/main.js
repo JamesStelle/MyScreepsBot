@@ -17,6 +17,8 @@ var runCreep = safeRequire('runCreep');
 var runRoom = safeRequire('runRoom');
 var runLink = safeRequire('runLink');
 var Tower = safeRequire('Tower');
+var PRTS = safeRequire('PRTS');
+var runGeneralRoom = safeRequire('runGeneralRoom');
 
 module.exports.loop = function () {
     // Global error handler for the main loop
@@ -73,6 +75,15 @@ module.exports.loop = function () {
                 Tower.run();
             } catch (error) {
                 console.log('Tower error:', error.message);
+            }
+        }
+        
+        // PRTS system - 精密侦察战术支援系统
+        if (PRTS && PRTS.monitorRoomStagnation) {
+            try {
+                PRTS.monitorRoomStagnation();
+            } catch (error) {
+                console.log('PRTS room stagnation monitoring error:', error.message);
             }
         }
         

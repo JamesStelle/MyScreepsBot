@@ -9,7 +9,7 @@ module.exports = {
             carrier: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1000
             carrierMineral: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 
             upgrader: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY,CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1300
-            builder: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE] // 1300
+            builder: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE] // 1300
         };
     },
 
@@ -28,33 +28,41 @@ module.exports = {
     },
 
     run:function() {
-        // Count creeps by role (ordered by spawn priority)
-        // 中文: 统计各角色的爬虫数量（按生成优先级排序）
+        // Count creeps by role (ordered by spawn priority) - only in E39N8 room
+        // 中文: 统计各角色的爬虫数量（按生成优先级排序）- 仅统计E39N8房间内的
         const creepCount = {
-            harvester: _.filter(Game.creeps, c => c.memory.role === 'harvester').length,
-            harvester0: _.filter(Game.creeps, c => c.memory.role === 'harvester0').length,
-            harvester1: _.filter(Game.creeps, c => c.memory.role === 'harvester1').length,
-            carrier: _.filter(Game.creeps, c => c.memory.role === 'carrier').length,
-            carrierMineral: _.filter(Game.creeps, c => c.memory.role === 'carrierMineral').length,
-            upgrader: _.filter(Game.creeps, c => c.memory.role === 'upgrader').length,
-            builder: _.filter(Game.creeps, c => c.memory.role === 'builder').length
+            harvester: _.filter(Game.creeps, c => c.memory.role === 'harvester' && c.room.name === 'E39N8').length,
+            harvester0: _.filter(Game.creeps, c => c.memory.role === 'harvester0' && c.room.name === 'E39N8').length,
+            harvester1: _.filter(Game.creeps, c => c.memory.role === 'harvester1' && c.room.name === 'E39N8').length,
+            carrier: _.filter(Game.creeps, c => c.memory.role === 'carrier' && c.room.name === 'E39N8').length,
+            carrierMineral: _.filter(Game.creeps, c => c.memory.role === 'carrierMineral' && c.room.name === 'E39N8').length,
+            upgrader: _.filter(Game.creeps, c => c.memory.role === 'upgrader' && c.room.name === 'E39N8').length,
+            builder: _.filter(Game.creeps, c => c.memory.role === 'builder' && c.room.name === 'E39N8').length
         };
         
         // Log current creep counts (ordered by spawn priority)
         // 中文: 输出当前各角色爬虫数量（按生成优先级排序）
         this.logCreepStatistics(creepCount);
-        // Spawn new creeps based on role counts
-        // 中文: 根据角色数量生成新的爬虫
+        // Get spawns in E39N8 room for multi-spawn support
+        // 中文: 获取E39N8房间内的spawn以支持多spawn情况
+        const room = Game.rooms['E39N8'];
+        if (!room) {
+            console.log('Warning: Room E39N8 not found or not visible!');
+            return;
+        }
+        
+        // Find the spawn named "E39N8" in E39N8 room
+        // 查找E39N8房间内名为"E39N8"的spawn
         const spawn = Game.spawns['E39N8'];
         
-        // Check if spawn exists and is not spawning
-        // 中文: 检查spawn是否存在且未在生成中
         if (!spawn) {
-            console.log('Warning: Spawn E39N8 not found!');
+            console.log('Warning: Spawn "E39N8" not found in room E39N8!');
             return;
         }
         
         if (spawn.spawning) {
+            // Spawn is busy, show status
+            // Spawn正在忙碌，显示状态
             this.showSpawningStatus(spawn);
             return;
         }
@@ -85,8 +93,8 @@ module.exports = {
             this.spawnCreep(spawn, roleToSpawn, bodyConfigs[roleToSpawn]);
         }
         
-        // Display spawning status
-        // 中文: 显示生成状态
+        // Display spawning status for all spawns in E39N8
+        // 中文: 显示E39N8房间内所有spawn的状态
         this.showSpawningStatus(spawn);
         
         // Display room energy status
@@ -101,17 +109,17 @@ module.exports = {
     // 中文: 生成爬虫的函数
     spawnCreep(spawn, role, body) {
         const newName = `E39N8${role.charAt(0).toUpperCase() + role.slice(1)}${Game.time}`;
-        //console.log(`Spawning new ${role}: ${newName}`);
+        console.log(`Spawning new ${role}: ${newName}`);
         spawn.spawnCreep(body, newName, { memory: { role } });
     },
-    // Function to display spawning status
-    // 中文: 显示生成状态的函数
+    // Function to display spawning status for spawn E39N8
+    // 中文: 显示E39N8 spawn的生成状态
     showSpawningStatus(spawn) {
-        if (spawn.spawning) {
-            const creep = Game.creeps[spawn.spawning.name];
-            // Display spawning status in console instead of room visual
-            // 在控制台而不是房间视觉中显示生成状态
-            if (Game.time % 10 === 0) { // Log every 10 ticks for spawning updates
+        // Display status every 10 ticks
+        // 每10个tick显示状态
+        if (Game.time % 10 === 0) {
+            if (spawn.spawning) {
+                const creep = Game.creeps[spawn.spawning.name];
                 console.log(`Spawning: ${creep.memory.role} (${spawn.spawning.name})`);
             }
         }
