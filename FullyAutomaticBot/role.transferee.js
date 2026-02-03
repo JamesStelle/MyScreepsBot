@@ -1,3 +1,66 @@
+/**
+ * Transferee 角色使用指南 / Transferee Role Usage Guide
+ * 
+ * 功能概述 / Overview:
+ * Transferee 是一个专门用于在不同建筑之间转移资源的角色
+ * Transferee is a specialized role for transferring resources between different structures
+ * 
+ * 使用步骤 / Usage Steps:
+ * 
+ * 1. 创建 Transferee 爬虫 / Create Transferee Creep:
+ *    Game.spawns['你的Spawn名称'].spawnCreep([WORK,CARRY,MOVE], '爬虫名称', {memory:{role:'transferee'}});
+ * 
+ * 2. 分配转移任务 / Assign Transfer Task:
+ *    Game.creeps['爬虫名称'].memory.transferTask = {
+ *        from: '源建筑ID或名称',    // 从哪里取资源 / Source structure ID or name
+ *        to: '目标建筑ID或名称',    // 传输到哪里 / Target structure ID or name
+ *        what: '资源类型',         // 传输什么资源 / Resource type to transfer
+ *        repeat: true/false       // 是否重复执行任务 / Whether to repeat the task
+ *    };
+ * 
+ * 使用示例 / Usage Examples:
+ * 
+ * 示例1：从存储转移能量到Spawn / Example 1: Transfer energy from storage to spawn
+ * Game.creeps['transferee1'].memory.transferTask = {
+ *     from: '你的Storage的ID',
+ *     to: 'Spawn1',
+ *     what: RESOURCE_ENERGY,
+ *     repeat: true
+ * };
+ * 
+ * 示例2：从容器转移矿物到终端 / Example 2: Transfer minerals from container to terminal
+ * Game.creeps['transferee2'].memory.transferTask = {
+ *     from: '容器ID',
+ *     to: '终端ID',
+ *     what: RESOURCE_OXYGEN,
+ *     repeat: false
+ * };
+ * 
+ * 示例3：一次性任务 / Example 3: One-time task
+ * Game.creeps['transferee3'].memory.transferTask = {
+ *     from: 'storage1',
+ *     to: 'lab1',
+ *     what: RESOURCE_HYDROGEN,
+ *     repeat: false  // 完成后自动清除任务 / Auto-clear task after completion
+ * };
+ * 
+ * 工作状态说明 / Status Indicators:
+ * ⏳ wait - 等待任务分配 / Waiting for task assignment
+ * 🔍 collect - 正在收集资源 / Collecting resources
+ * 🚚 deliver - 正在传输资源 / Delivering resources
+ * 🔄 repeat - 重复执行任务 / Repeating task
+ * ✅ done - 任务完成 / Task completed
+ * ❌ invalid - 任务参数无效 / Invalid task parameters
+ * ❌ no src - 找不到源建筑 / Source structure not found
+ * ❌ no tgt - 找不到目标建筑 / Target structure not found
+ * ⚠️ empty - 源建筑资源为空 / Source structure is empty
+ * ⚠️ full - 目标建筑已满 / Target structure is full
+ * 
+ * 任务管理 / Task Management:
+ * 清除任务 / Clear task: delete Game.creeps['爬虫名称'].memory.transferTask;
+ * 修改任务 / Modify task: Game.creeps['爬虫名称'].memory.transferTask.repeat = false;
+ */
+
 var roleTransferee = {
 
     /** @param {Creep} creep **/
