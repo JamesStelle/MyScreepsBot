@@ -6,6 +6,10 @@ var PRTS = {
     // 房间停滞监控数据
     roomMonitoring: {},
     
+    // Controller energy tracking data
+    // 控制器能量跟踪数据
+    controllerEnergyTracking: {},
+    
     // Error code descriptions mapping
     // 错误代码描述映射
     errorDescriptions: {
@@ -74,6 +78,13 @@ var PRTS = {
             Memory.prtsRoomMonitoring = {};
         }
         this.roomMonitoring = Memory.prtsRoomMonitoring;
+        
+        // Initialize controller energy tracking from Memory
+        // 从Memory初始化控制器能量跟踪数据
+        if (!Memory.prtsControllerEnergyTracking) {
+            Memory.prtsControllerEnergyTracking = {};
+        }
+        this.controllerEnergyTracking = Memory.prtsControllerEnergyTracking;
         
         console.log("🤖 PRTS系统已激活 - Precision Reconnaissance and Tactical Support Online");
     },
@@ -176,6 +187,10 @@ var PRTS = {
         // Save monitoring data to Memory
         // 将监控数据保存到Memory
         Memory.prtsRoomMonitoring = this.roomMonitoring;
+        
+        // Also run controller energy tracking
+        // 同时运行控制器能量跟踪
+        this.trackControllerEnergy();
     },
 
     // Get room stagnation status
@@ -237,6 +252,123 @@ var PRTS = {
             this.roomMonitoring = {};
             Memory.prtsRoomMonitoring = {};
             console.log("🗑️ 已清除所有房间的停滞监控数据");
+        }
+    },
+
+    // Track controller energy progress over 1500 ticks
+    // 跟踪控制器在1500tick内的能量进度
+    trackControllerEnergy: function() {
+        // Check all owned rooms
+        // 检查所有拥有的房间
+        for (var roomName in Game.rooms) {
+            var room = Game.rooms[roomName];
+            
+            // Only monitor owned rooms with controller
+            // 只监控有控制器的拥有房间
+            if (!room.controller || !room.controller.my) {
+                continue;
+            }
+            
+            var controller = room.controller;
+            var currentProgress = controller.progress || 0;
+            var currentTick = Game.time;
+            
+            // Initialize tracking data if not exists
+            // 如果不存在则初始化跟踪数据
+            if (!this.controllerEnergyTracking[roomName]) {
+                this.controllerEnergyTracking[roomName] = {
+                    startTick: currentTick,
+                    startProgress: currentProgress,
+                    progressHistory: []
+                };
+            }
+            
+            var trackingData = this.controllerEnergyTracking[roomName];
+            
+            // Add current progress to history
+            // 将当前进度添加到历史记录
+            trackingData.progressHistory.push({
+                tick: currentTick,
+                progress: currentProgress
+            });
+            
+            // Keep only last 1500 ticks of data
+            // 只保留最近1500tick的数据
+            var cutoffTick = currentTick - 1500;
+            trackingData.progressHistory = trackingData.progressHistory.filter(function(entry) {
+                return entry.tick > cutoffTick;
+            });
+            
+            // Update start point if we have data older than 1500 ticks
+            // 如果有超过1500tick的数据，更新起始点
+            if (trackingData.progressHistory.length > 0) {
+                var oldestEntry = trackingData.progressHistory[0];
+                trackingData.startTick = oldestEntry.tick;
+                trackingData.startProgress = oldestEntry.progress;
+            }
+            
+            // Calculate and display energy increase over 1500 ticks
+            // 计算并显示1500tick内的能量增加
+            if (currentTick - trackingData.startTick >= 1500 || trackingData.progressHistory.length >= 1500) {
+                var energyIncrease = currentProgress - trackingData.startProgress;
+                var ticksPassed = currentTick - trackingData.startTick;
+                var averagePerTick = ticksPassed > 0 ? (energyIncrease / ticksPassed).toFixed(2) : 0;
+                
+                console.log("📊 房间 " + roomName + " 控制器能量统计 (过去" + Math.min(ticksPassed, 1500) + "tick):");
+                console.log("  ⚡ 能量增加: " + energyIncrease + " (从 " + trackingData.startProgress + " 到 " + currentProgress + ")");
+                console.log("  📈 平均每tick: " + averagePerTick);
+                console.log("  🎯 当前等级: RCL" + controller.level + " (" + currentProgress + "/" + (controller.progressTotal || 0) + ")");
+            }
+        }
+        
+        // Save tracking data to Memory
+        // 将跟踪数据保存到Memory
+        Memory.prtsControllerEnergyTracking = this.controllerEnergyTracking;
+    },
+
+    // Get controller energy statistics for a specific room
+    // 获取特定房间的控制器能量统计
+    getControllerEnergyStats: function(roomName) {
+        if (!this.controllerEnergyTracking[roomName]) {
+            return "📊 房间 " + roomName + " 未在控制器能量跟踪中";
+        }
+        
+        var room = Game.rooms[roomName];
+        if (!room || !room.controller || !room.controller.my) {
+            return "❌ 房间 " + roomName + " 不可见或无控制器";
+        }
+        
+        var trackingData = this.controllerEnergyTracking[roomName];
+        var controller = room.controller;
+        var currentProgress = controller.progress || 0;
+        var currentTick = Game.time;
+        
+        var ticksPassed = currentTick - trackingData.startTick;
+        var energyIncrease = currentProgress - trackingData.startProgress;
+        var averagePerTick = ticksPassed > 0 ? (energyIncrease / ticksPassed).toFixed(2) : 0;
+        
+        var stats = ["🎯 控制器能量统计: " + roomName];
+        stats.push("📅 跟踪时长: " + Math.min(ticksPassed, 1500) + " tick");
+        stats.push("⚡ 能量增加: " + energyIncrease + " (从 " + trackingData.startProgress + " 到 " + currentProgress + ")");
+        stats.push("📈 平均每tick: " + averagePerTick);
+        stats.push("🎯 当前等级: RCL" + controller.level);
+        stats.push("📊 当前进度: " + currentProgress + "/" + (controller.progressTotal || 0) + " (" + 
+                  Math.round((currentProgress / (controller.progressTotal || 1)) * 100) + "%)");
+        
+        return stats.join('\n');
+    },
+
+    // Clear controller energy tracking data
+    // 清除控制器能量跟踪数据
+    clearControllerEnergyData: function(roomName) {
+        if (roomName) {
+            delete this.controllerEnergyTracking[roomName];
+            delete Memory.prtsControllerEnergyTracking[roomName];
+            console.log("🗑️ 已清除房间 " + roomName + " 的控制器能量跟踪数据");
+        } else {
+            this.controllerEnergyTracking = {};
+            Memory.prtsControllerEnergyTracking = {};
+            console.log("🗑️ 已清除所有房间的控制器能量跟踪数据");
         }
     },
 
@@ -420,6 +552,26 @@ var PRTS = {
         this.clearRoomStagnationData(roomName);
     },
 
+    // Quick command: Show controller energy statistics
+    // 快捷命令：显示控制器能量统计
+    controllerStats: function(roomName) {
+        if (roomName) {
+            console.log(this.getControllerEnergyStats(roomName));
+        } else {
+            console.log("📊 所有房间控制器能量统计:");
+            for (var room in this.controllerEnergyTracking) {
+                console.log(this.getControllerEnergyStats(room));
+                console.log("─".repeat(40));
+            }
+        }
+    },
+
+    // Quick command: Clear controller energy tracking data
+    // 快捷命令：清除控制器能量跟踪数据
+    clearControllerStats: function(roomName) {
+        this.clearControllerEnergyData(roomName);
+    },
+
     // Help command: Show all available PRTS commands
     // 帮助命令：显示所有可用的PRTS命令
     help: function(category) {
@@ -431,6 +583,7 @@ var PRTS = {
             console.log('');
             console.log('� 可用命令分类:');
             console.log('// prts.help("basic")     - 基础监控命令');
+            console.log('// prts.help("controller") - 控制器能量跟踪命令');
             console.log('// prts.help("stagnation") - 停滞监控命令');
             console.log('// prts.help("format")    - 控制台美化命令');
             console.log('// prts.help("debug")     - 测试调试命令');
@@ -441,7 +594,9 @@ var PRTS = {
             console.log('');
             console.log('🔧 系统状态:');
             var monitoredRooms = Object.keys(this.roomMonitoring).length;
+            var trackedControllers = Object.keys(this.controllerEnergyTracking).length;
             console.log('- 监控房间: ' + monitoredRooms + ' 个');
+            console.log('- 跟踪控制器: ' + trackedControllers + ' 个');
             console.log('- 系统状态: 运行中');
             console.log('═'.repeat(50));
             return;
@@ -453,6 +608,10 @@ var PRTS = {
             case 'basic':
             case 'b':
                 this.showBasicHelp();
+                break;
+            case 'controller':
+            case 'c':
+                this.showControllerHelp();
                 break;
             case 'stagnation':
             case 's':
@@ -486,6 +645,21 @@ var PRTS = {
         console.log('// prts.monitor("爬虫名称")        - 监控特定爬虫详细信息');
         console.log('');
         console.log('💡 房间名称可选，默认为 "E39N8"');
+    },
+
+    // Show controller energy tracking commands help
+    // 显示控制器能量跟踪命令帮助
+    showControllerHelp: function() {
+        console.log('🎯 PRTS - 控制器能量跟踪命令');
+        console.log('─'.repeat(40));
+        console.log('// prts.controllerStats("E39N8")  - 查看特定房间控制器能量统计');
+        console.log('// prts.controllerStats()         - 查看所有房间控制器能量统计');
+        console.log('// prts.clearControllerStats("E39N8") - 清除特定房间控制器跟踪数据');
+        console.log('// prts.clearControllerStats()    - 清除所有房间控制器跟踪数据');
+        console.log('');
+        console.log('💡 自动跟踪1500tick内控制器能量增加');
+        console.log('💡 每tick自动在控制台输出统计信息');
+        console.log('💡 显示平均每tick能量增长率');
     },
 
     // Show stagnation monitoring commands help
@@ -533,6 +707,8 @@ var PRTS = {
         console.log('🤖 PRTS - 所有可用命令');
         console.log('═'.repeat(50));
         this.showBasicHelp();
+        console.log('');
+        this.showControllerHelp();
         console.log('');
         this.showStagnationHelp();
         console.log('');

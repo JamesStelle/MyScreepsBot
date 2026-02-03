@@ -49,15 +49,88 @@ var runGeneralRoom = {
     // 常量
     SPAWN_ENERGY_CAPACITY: 300,  // Each spawn has 300 energy capacity
     
-    // Role spawn quantity configuration
-    // 角色生成数量配置
+    // Role spawn quantity configuration by RCL level
+    // 按RCL等级的角色生成数量配置
     roleSpawnQuantity: {
-        harvester0: 1,      // 采集者0数量
-        harvester1: 1,      // 采集者1数量
-        carrier: 1,         // 运输者数量
-        carrierMineral: 1,  // 矿物运输者数量
-        upgrader: 1,        // 升级者数量
-        builder: 1          // 建造者数量
+        // RCL1: 基础生存阶段，只需要基本角色
+        1: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 0,         // 运输者数量 - RCL1通常没有Container
+            carrierMineral: 0,  // 矿物运输者数量 - RCL1没有矿物开采
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        },
+        
+        // RCL2: 开始扩展，但Container可能还未建造
+        2: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 0,         // 运输者数量 - RCL2可能还没有Container
+            carrierMineral: 0,  // 矿物运输者数量 - RCL2没有矿物开采
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        },
+        
+        // RCL3: 开始使用Container和更复杂的物流
+        3: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 1,         // 运输者数量 - RCL3开始需要carrier
+            carrierMineral: 0,  // 矿物运输者数量 - RCL3还没有矿物开采
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        },
+        
+        // RCL4: 稳定发展阶段
+        4: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 1,         // 运输者数量
+            carrierMineral: 0,  // 矿物运输者数量 - RCL4还没有矿物开采
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        },
+        
+        // RCL5: 中级发展阶段
+        5: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 1,         // 运输者数量
+            carrierMineral: 0,  // 矿物运输者数量 - RCL5还没有矿物开采
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        },
+        
+        // RCL6: 开始矿物开采，有Extractor和Terminal
+        6: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 1,         // 运输者数量
+            carrierMineral: 1,  // 矿物运输者数量 - RCL6开始矿物开采
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        },
+        
+        // RCL7: 高级发展阶段，多个Spawn
+        7: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 1,         // 运输者数量
+            carrierMineral: 1,  // 矿物运输者数量
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        },
+        
+        // RCL8: 最高等级，资源充足
+        8: {
+            harvester0: 1,      // 采集者0数量
+            harvester1: 1,      // 采集者1数量
+            carrier: 1,         // 运输者数量
+            carrierMineral: 1,  // 矿物运输者数量
+            upgrader: 1,        // 升级者数量
+            builder: 1          // 建造者数量
+        }
     },
 
     // Role body configurations for each specific RCL level
@@ -66,34 +139,34 @@ var runGeneralRoom = {
         // RCL1: 1 Spawn(300) + 0 Extensions = 300 energy max per creep
         // RCL1: 1个Spawn(300) + 0个Extensions = 单次生产最大300能量
         1: {
-            harvester0: [WORK, WORK, CARRY, MOVE], // 300 energy
-            harvester1: [WORK, WORK, CARRY, MOVE], // 300 energy
+            harvester0: [MOVE,MOVE,WORK,CARRY,CARRY], // 300 energy
+            harvester1: [MOVE,MOVE,WORK,CARRY,CARRY], // 300 energy
             carrier: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE], // 300 energy
             carrierMineral: [CARRY, CARRY, CARRY, CARRY, MOVE, MOVE], // 300 energy
-            upgrader: [WORK, WORK, CARRY, MOVE], // 300 energy
-            builder: [WORK, CARRY, CARRY, MOVE] // 200 energy
+            upgrader: [MOVE,MOVE,WORK,CARRY,CARRY], // 300 energy
+            builder: [MOVE,MOVE,WORK,CARRY,CARRY] // 300 energy
         },
         
         // RCL2: 1 Spawn(300) + 5 Extensions(50×5=250) = 550 energy max per creep
         // RCL2: 1个Spawn(300) + 5个Extensions(50×5=250) = 单次生产最大550能量
         2: {
-            harvester0: [WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE], // 500 energy
-            harvester1: [WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE], // 500 energy
+            harvester0: [MOVE,MOVE,MOVE,WORK,WORK,WORK,CARRY,CARRY], // 500 energy
+            harvester1: [MOVE,MOVE,MOVE,WORK,WORK,WORK,CARRY,CARRY], // 500 energy
             carrier: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], // 550 energy
             carrierMineral: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE], // 550 energy
-            upgrader: [WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE], // 500 energy
-            builder: [WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE] // 550 energy
+            upgrader: [MOVE,MOVE,MOVE,WORK,WORK,WORK,CARRY,CARRY], // 500 energy
+            builder: [MOVE,MOVE,MOVE,WORK,WORK,WORK,CARRY,CARRY] // 550 energy
         },
         
         // RCL3: 1 Spawn(300) + 10 Extensions(50×10=500) = 800 energy max per creep
         // RCL3: 1个Spawn(300) + 10个Extensions(50×10=500) = 单次生产最大800能量
         3: {
-            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], // 800 energy
-            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], // 800 energy
+            harvester0: [MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,CARRY], // 800 energy
+            harvester1: [MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,CARRY], // 800 energy
             carrier: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], // 800 energy
             carrierMineral: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE], // 800 energy
-            upgrader: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE], // 800 energy
-            builder: [WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE] // 750 energy
+            upgrader: [MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,CARRY], // 800 energy
+            builder: [MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,CARRY,CARRY] // 750 energy
         },
         
         // RCL4: 1 Spawn(300) + 20 Extensions(50×20=1000) = 1300 energy max per creep
@@ -211,36 +284,51 @@ var runGeneralRoom = {
         return this.SPAWN_ENERGY_CAPACITY + totalExtensionCapacity;
     },
     
-    // Get role spawn quantities
-    // 获取角色生成数量
-    getRoleSpawnQuantities: function() {
-        return this.roleSpawnQuantity;
+    // Get role spawn quantities for a specific RCL level
+    // 获取指定RCL等级的角色生成数量
+    getRoleSpawnQuantities: function(controllerLevel) {
+        if (controllerLevel >= 1 && controllerLevel <= 8) {
+            return this.roleSpawnQuantity[controllerLevel];
+        } else {
+            console.log('❌ 无效的控制器等级: ' + controllerLevel + ' (有效范围: 1-8)');
+            return this.roleSpawnQuantity[1]; // 默认返回RCL1配置
+        }
     },
 
-    // Set role spawn quantity for a specific role
-    // 设置特定角色的生成数量
-    setRoleSpawnQuantity: function(roleName, quantity) {
-        if (this.roleSpawnQuantity.hasOwnProperty(roleName)) {
-            var oldQuantity = this.roleSpawnQuantity[roleName];
-            this.roleSpawnQuantity[roleName] = quantity;
-            console.log('✅ 已更新 ' + roleName + ' 生成数量: ' + oldQuantity + ' → ' + quantity);
+    // Set role spawn quantity for a specific role and RCL level
+    // 设置特定角色和RCL等级的生成数量
+    setRoleSpawnQuantity: function(controllerLevel, roleName, quantity) {
+        if (controllerLevel < 1 || controllerLevel > 8) {
+            console.log('❌ 无效的控制器等级: ' + controllerLevel + ' (有效范围: 1-8)');
+            return false;
+        }
+        
+        if (this.roleSpawnQuantity[controllerLevel] && this.roleSpawnQuantity[controllerLevel].hasOwnProperty(roleName)) {
+            var oldQuantity = this.roleSpawnQuantity[controllerLevel][roleName];
+            this.roleSpawnQuantity[controllerLevel][roleName] = quantity;
+            console.log('✅ 已更新 RCL' + controllerLevel + ' ' + roleName + ' 生成数量: ' + oldQuantity + ' → ' + quantity);
             return true;
         } else {
-            console.log('❌ 未知角色: ' + roleName);
-            console.log('💡 可用角色: ' + Object.keys(this.roleSpawnQuantity).join(', '));
+            console.log('❌ 未知角色: ' + roleName + ' 或无效等级: RCL' + controllerLevel);
+            console.log('💡 可用角色: ' + Object.keys(this.roleSpawnQuantity[1]).join(', '));
             return false;
         }
     },
 
-    // Set spawn quantities for all roles
-    // 设置所有角色的生成数量
-    setAllRoleSpawnQuantities: function(quantities) {
-        console.log('🔧 批量设置角色生成数量...');
+    // Set spawn quantities for all roles at a specific RCL level
+    // 设置特定RCL等级所有角色的生成数量
+    setAllRoleSpawnQuantities: function(controllerLevel, quantities) {
+        if (controllerLevel < 1 || controllerLevel > 8) {
+            console.log('❌ 无效的控制器等级: ' + controllerLevel + ' (有效范围: 1-8)');
+            return { updated: 0, failed: 1 };
+        }
+        
+        console.log('🔧 批量设置RCL' + controllerLevel + '角色生成数量...');
         var updated = 0;
         var failed = 0;
         
         for (var roleName in quantities) {
-            if (this.setRoleSpawnQuantity(roleName, quantities[roleName])) {
+            if (this.setRoleSpawnQuantity(controllerLevel, roleName, quantities[roleName])) {
                 updated++;
             } else {
                 failed++;
@@ -251,38 +339,80 @@ var runGeneralRoom = {
         return { updated: updated, failed: failed };
     },
 
-    // Display current spawn quantities
-    // 显示当前生成数量配置
-    displaySpawnQuantities: function() {
-        console.log('🤖 当前角色生成数量配置:');
-        console.log('─'.repeat(40));
-        console.log('角色名称        | 生成数量');
-        console.log('─'.repeat(40));
-        
-        for (var roleName in this.roleSpawnQuantity) {
-            var line = roleName.padEnd(15) + ' | ' + this.roleSpawnQuantity[roleName] + '个';
-            console.log(line);
+    // Display current spawn quantities for a specific RCL level or all levels
+    // 显示特定RCL等级或所有等级的当前生成数量配置
+    displaySpawnQuantities: function(controllerLevel) {
+        if (controllerLevel) {
+            // Display for specific level
+            // 显示特定等级的配置
+            if (controllerLevel < 1 || controllerLevel > 8) {
+                console.log('❌ 无效的控制器等级: ' + controllerLevel + ' (有效范围: 1-8)');
+                return;
+            }
+            
+            console.log('🤖 RCL' + controllerLevel + ' 角色生成数量配置:');
+            console.log('─'.repeat(40));
+            console.log('角色名称        | 生成数量');
+            console.log('─'.repeat(40));
+            
+            var quantities = this.roleSpawnQuantity[controllerLevel];
+            for (var roleName in quantities) {
+                var line = roleName.padEnd(15) + ' | ' + quantities[roleName] + '个';
+                console.log(line);
+            }
+            
+            console.log('─'.repeat(40));
+            console.log('💡 使用 setRoleSpawnQuantity(' + controllerLevel + ', 角色名, 数量) 修改');
+        } else {
+            // Display for all levels
+            // 显示所有等级的配置
+            console.log('🤖 所有RCL等级角色生成数量配置:');
+            console.log('═'.repeat(80));
+            
+            for (var level = 1; level <= 8; level++) {
+                console.log('');
+                console.log('📊 RCL' + level + ':');
+                console.log('─'.repeat(60));
+                console.log('角色名称        | 生成数量 | 说明');
+                console.log('─'.repeat(60));
+                
+                var quantities = this.roleSpawnQuantity[level];
+                for (var roleName in quantities) {
+                    var explanation = '';
+                    if (quantities[roleName] === 0) {
+                        explanation = '(此等级不需要)';
+                    }
+                    
+                    var line = roleName.padEnd(15) + ' | ' + 
+                              (quantities[roleName] + '个').padEnd(8) + ' | ' + 
+                              explanation;
+                    console.log(line);
+                }
+            }
+            
+            console.log('');
+            console.log('═'.repeat(80));
+            console.log('💡 使用 displaySpawnQuantities(等级) 查看特定等级配置');
+            console.log('💡 使用 setRoleSpawnQuantity(等级, 角色名, 数量) 修改');
         }
-        
-        console.log('─'.repeat(40));
-        console.log('💡 使用 setRoleSpawnQuantity(角色名, 数量) 修改');
-        console.log('💡 使用 setAllRoleSpawnQuantities({角色名: 数量}) 批量修改');
     },
 
     // Get room creep counts by role
     // 获取房间按角色分类的creep数量
     getRoomCreepCounts: function(roomName) {
         var room = Game.rooms[roomName];
-        if (!room) {
-            return { error: '房间不存在: ' + roomName };
+        if (!room || !room.controller || !room.controller.my) {
+            return { error: '房间不存在或不属于你: ' + roomName };
         }
         
+        var controllerLevel = room.controller.level;
+        var targetQuantities = this.getRoleSpawnQuantities(controllerLevel);
         var creeps = room.find(FIND_MY_CREEPS);
         var counts = {};
         
         // Initialize counts
         // 初始化计数
-        for (var roleName in this.roleSpawnQuantity) {
+        for (var roleName in targetQuantities) {
             counts[roleName] = 0;
         }
         
@@ -302,8 +432,10 @@ var runGeneralRoom = {
         
         return {
             roomName: roomName,
+            controllerLevel: controllerLevel,
             totalCreeps: creeps.length,
-            counts: counts
+            counts: counts,
+            targetQuantities: targetQuantities
         };
     },
 
@@ -318,18 +450,25 @@ var runGeneralRoom = {
         
         var spawnNeeds = [];
         var satisfied = [];
+        var targetQuantities = creepCounts.targetQuantities;
         
-        console.log('🔍 检查房间 ' + roomName + ' 的creep生成需求...');
+        console.log('🔍 检查房间 ' + roomName + ' (RCL' + creepCounts.controllerLevel + ') 的creep生成需求...');
         console.log('─'.repeat(60));
         console.log('角色名称        | 当前数量 | 目标数量 | 状态');
         console.log('─'.repeat(60));
         
-        for (var roleName in this.roleSpawnQuantity) {
+        for (var roleName in targetQuantities) {
             var current = creepCounts.counts[roleName] || 0;
-            var target = this.roleSpawnQuantity[roleName];
+            var target = targetQuantities[roleName];
             var needed = Math.max(0, target - current);
             
             var status = needed > 0 ? '❌ 需要' + needed + '个' : '✅ 满足';
+            
+            // Special status for roles with 0 target
+            // 对目标数量为0的角色显示特殊状态
+            if (target === 0) {
+                status = '⚪ 不需要';
+            }
             
             var line = roleName.padEnd(15) + ' | ' +
                       current.toString().padEnd(8) + ' | ' +
@@ -354,9 +493,11 @@ var runGeneralRoom = {
         
         return {
             roomName: roomName,
+            controllerLevel: creepCounts.controllerLevel,
             spawnNeeds: spawnNeeds,
             satisfied: satisfied,
-            totalCreeps: creepCounts.totalCreeps
+            totalCreeps: creepCounts.totalCreeps,
+            targetQuantities: targetQuantities
         };
     },
 
@@ -1254,6 +1395,7 @@ var runGeneralRoom = {
             console.log('// runGeneralRoom.help("analyze")  - 房间分析命令');
             console.log('// runGeneralRoom.help("poll")     - 房间轮询命令');
             console.log('// runGeneralRoom.help("roles")    - 角色配置命令');
+            console.log('// runGeneralRoom.help("spawn")    - 生成数量管理命令');
             console.log('// runGeneralRoom.help("all")      - 显示所有命令');
             console.log('');
             console.log('💡 使用方法: runGeneralRoom.help("分类名") 查看具体命令');
@@ -1286,6 +1428,10 @@ var runGeneralRoom = {
             case 'roles':
             case 'r':
                 this.showRolesHelp();
+                break;
+            case 'spawn':
+            case 'sp':
+                this.showSpawnHelp();
                 break;
             case 'all':
             case 'al':
@@ -1385,6 +1531,8 @@ var runGeneralRoom = {
         console.log('');
         this.showRolesHelp();
         console.log('');
+        this.showSpawnHelp();
+        console.log('');
         console.log('❓ 帮助命令:');
         console.log('// runGeneralRoom.help()           - 显示帮助菜单');
         console.log('// runGeneralRoom.h("分类")        - 快捷帮助');
@@ -1409,18 +1557,21 @@ var runGeneralRoom = {
     showSpawnHelp: function() {
         console.log('📊 runGeneralRoom - 生成数量管理命令');
         console.log('─'.repeat(50));
-        console.log('// runGeneralRoom.displaySpawnQuantities()                    - 显示当前生成数量配置');
-        console.log('// runGeneralRoom.setRoleSpawnQuantity("harvester0", 2)      - 设置单个角色数量');
-        console.log('// runGeneralRoom.setAllRoleSpawnQuantities({...})           - 批量设置角色数量');
+        console.log('// runGeneralRoom.displaySpawnQuantities()                    - 显示所有等级生成数量配置');
+        console.log('// runGeneralRoom.displaySpawnQuantities(7)                  - 显示RCL7生成数量配置');
+        console.log('// runGeneralRoom.setRoleSpawnQuantity(6, "harvester0", 2)   - 设置RCL6单个角色数量');
+        console.log('// runGeneralRoom.setAllRoleSpawnQuantities(5, {...})        - 批量设置RCL5角色数量');
         console.log('// runGeneralRoom.getRoomCreepCounts("E39N8")                - 获取房间creep统计');
         console.log('// runGeneralRoom.checkSpawnNeeds("E39N8")                   - 检查房间生成需求');
         console.log('// runGeneralRoom.getSpawnPriorityList("E39N8")              - 获取生成优先级列表');
         console.log('');
-        console.log('💡 生成数量管理功能:');
-        console.log('- 每种角色默认生成数量为1个');
-        console.log('- 支持自定义调整各角色的生成数量');
-        console.log('- 自动检查房间当前creep数量与目标数量的差异');
-        console.log('- 提供按优先级排序的生成建议列表');
+        console.log('💡 按RCL等级生成数量管理功能:');
+        console.log('- RCL1-2: carrier和carrierMineral为0 (通常没有Container)');
+        console.log('- RCL3-5: carrier为1，carrierMineral为0 (没有矿物开采)');
+        console.log('- RCL6-8: carrier和carrierMineral都为1 (完整功能)');
+        console.log('- 每种角色在每个等级都有专门优化的数量配置');
+        console.log('- 自动根据房间RCL等级选择对应的生成数量');
+        console.log('- 支持按等级自定义调整各角色的生成数量');
         console.log('- 优先级顺序: harvester → harvester0 → harvester1 → carrier → carrierMineral → upgrader → builder');
     }
 };
