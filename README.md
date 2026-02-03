@@ -7,6 +7,7 @@
 ```
 ├── 408Bot2/                    # 第二版本AI机器人
 ├── 408Bot3/                    # 第三版本AI机器人  
+├── FullyAutomaticBot/          # 全自动机器人（最新版本）
 ├── 63超级抠位置自动布局 傻瓜版/    # 自动布局工具
 ├── LICENSE                     # 开源许可证
 └── README.md                   # 项目说明文档
@@ -14,9 +15,9 @@
 
 ## 🤖 AI机器人版本
 
-### 408Bot2 & 408Bot3
+### FullyAutomaticBot（推荐）
 
-两个高度优化的 Screeps AI 系统，实现了完整的殖民地自动化管理。基于模块化架构设计，具备完善的错误处理机制和性能优化。
+最新的全自动化 Screeps AI 系统，基于408Bot系列的优化版本，实现了完整的殖民地自动化管理。采用模块化架构设计，具备完善的错误处理机制和性能优化。
 
 #### 🌟 核心特性
 
@@ -54,7 +55,7 @@
 
 1. **代码部署**
    ```bash
-   # 1. 选择机器人版本（推荐408Bot3）
+   # 1. 选择机器人版本（推荐FullyAutomaticBot）
    # 2. 上传整个文件夹到Screeps代码库
    # 3. 确保所有模块文件都已上传
    ```
@@ -77,6 +78,94 @@
    // 验证模块加载
    console.log('System modules loaded successfully');
    ```
+
+## � 角色使用指南
+
+### Transferee 角色
+
+**功能概述**：专门用于在不同建筑之间转移资源的角色
+
+**创建方法**：
+```javascript
+Game.spawns['你的Spawn名称'].spawnCreep([WORK,CARRY,MOVE], '爬虫名称', {memory:{role:'transferee'}});
+```
+
+**分配任务**：
+```javascript
+Game.creeps['爬虫名称'].memory.transferTask = {
+    from: '源建筑ID或名称',    // 从哪里取资源
+    to: '目标建筑ID或名称',    // 传输到哪里
+    what: '资源类型',         // 传输什么资源
+    repeat: true/false       // 是否重复执行任务
+};
+```
+
+**使用示例**：
+```javascript
+// 从存储转移能量到Spawn
+Game.creeps['transferee1'].memory.transferTask = {
+    from: '你的Storage的ID',
+    to: 'Spawn1',
+    what: RESOURCE_ENERGY,
+    repeat: true
+};
+```
+
+**状态说明**：
+- `⏳ wait` - 等待任务分配
+- `🔍 collect` - 正在收集资源
+- `🚚 deliver` - 正在传输资源
+- `✅ done` - 任务完成
+
+### Attacker 角色
+
+**功能概述**：专门用于攻击敌方房间和建筑的军事角色
+
+**创建方法**：
+```javascript
+// 基础攻击者
+Game.spawns['你的Spawn名称'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], '攻击者名称', {memory:{role:'attacker'}});
+
+// 重装攻击者
+Game.spawns['你的Spawn名称'].spawnCreep([TOUGH,TOUGH,ATTACK,ATTACK,ATTACK,MOVE,MOVE,MOVE], '重装攻击者', {memory:{role:'attacker'}});
+```
+
+**攻击优先级**：
+1. 塔楼 (Towers) - 🎯 tower - 最高威胁，优先摧毁
+2. 孵化器 (Spawns) - 🎯 spawn - 阻止敌方生产爬虫
+3. 其他敌对建筑 - 🎯 struct - 清理剩余建筑
+
+**状态说明**：
+- `🚀 moving` - 正在前往目标房间
+- `🎯 tower` - 正在攻击塔楼
+- `💥 wall` - 正在清除障碍物
+- `👁️ patrol` - 巡逻模式，寻找新目标
+
+### Healer 角色
+
+**功能概述**：专门用于治疗和支援其他爬虫的医疗角色，主要跟随攻击者提供治疗支持
+
+**创建方法**：
+```javascript
+// 基础治疗者
+Game.spawns['你的Spawn名称'].spawnCreep([HEAL,HEAL,MOVE,MOVE], '治疗者名称', {memory:{role:'healer'}});
+
+// 重装治疗者
+Game.spawns['你的Spawn名称'].spawnCreep([TOUGH,HEAL,HEAL,HEAL,MOVE,MOVE,MOVE], '强力治疗者', {memory:{role:'healer'}});
+```
+
+**治疗优先级**：
+1. 自己严重受损 (< 50% HP) - 💚 self - 确保治疗者生存
+2. 攻击者受损 - 💚 att / 💙 ratt - 保护主要战斗单位
+3. 自己轻微受损 - 💚 self - 维持满血状态
+4. 附近盟友受损 - 💚 ally / 💙 raly - 支援其他友军
+
+**状态说明**：
+- `🤝 found` - 找到攻击者目标
+- `🏃 catch` - 追赶攻击者
+- `💚 self` - 治疗自己
+- `💚 att` - 近距离治疗攻击者
+- `💙 ratt` - 远程治疗攻击者
 
 #### 🔧 高级功能系统
 
@@ -104,6 +193,10 @@
 - **双模式运行**：战斗模式(全塔攻击) vs 和平模式(单塔维护)
 - **友军识别**：配置文件白名单支持，避免误伤
 - **全面修复**：支持所有建筑类型修复，包括城墙
+
+### 408Bot2 & 408Bot3
+
+两个高度优化的 Screeps AI 系统，实现了完整的殖民地自动化管理。基于模块化架构设计，具备完善的错误处理机制和性能优化。这些版本为FullyAutomaticBot的开发奠定了基础。
 
 ## 🏗️ 自动布局工具
 
