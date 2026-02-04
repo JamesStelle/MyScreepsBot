@@ -12,6 +12,7 @@ function safeRequire(moduleName) {
 // Safe module loading with fallback
 // 中文: 带回退机制的安全模块加载
 var memoryCleaner = safeRequire('memoryCleaner');
+var memorySegmented = safeRequire('memorySegmented');
 var pixelGenerator = safeRequire('pixelGenerator');
 var runCreep = safeRequire('runCreep');
 var runRoom = safeRequire('runRoom');
@@ -30,6 +31,15 @@ module.exports.loop = function () {
                 memoryCleaner.run();
             } catch (error) {
                 console.log('memoryCleaner error:', error.message);
+            }
+        }
+        
+        // Segmented memory management - 分段内存管理
+        if (memorySegmented && memorySegmented.run) {
+            try {
+                memorySegmented.run();
+            } catch (error) {
+                console.log('memorySegmented error:', error.message);
             }
         }
         
@@ -57,6 +67,15 @@ module.exports.loop = function () {
                 runRoom.run();
             } catch (error) {
                 console.log('runRoom error:', error.message);
+            }
+        }
+        
+        // General room management - 通用房间管理
+        if (runGeneralRoom && runGeneralRoom.run) {
+            try {
+                runGeneralRoom.run();
+            } catch (error) {
+                console.log('runGeneralRoom error:', error.message);
             }
         }
         

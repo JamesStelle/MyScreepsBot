@@ -1,3 +1,5 @@
+var config = require('config');
+
 var roleHealer = {
 
     /** @param {Creep} creep **/
@@ -104,26 +106,53 @@ var roleHealer = {
     followDirectly: function(creep, attacker) {
         const distance = creep.pos.getRangeTo(attacker);
         
-        if (distance > 3) {
-            // Too far, move closer
-            // 距离太远，靠近一些
+        if (distance > 1) {
+            // Too far, move closer to form tight squad
+            // 距离太远，靠近形成紧密小队
             creep.moveTo(attacker, {
                 visualizePathStyle: {stroke: '#00ff00'},
                 reusePath: 3
             });
-            creep.say('🏃 catch');
-        } else if (distance < 1) {
-            // Too close, maintain some distance
-            // 距离太近，保持一些距离
-            const direction = creep.pos.getDirectionTo(attacker);
-            const oppositeDir = (direction + 3) % 8 + 1; // Get opposite direction
-            creep.move(oppositeDir);
-            creep.say('↩️ space');
+            creep.say('🏃 squad');
+        } else if (distance === 1) {
+            // Perfect squad distance, stay in position
+            // 完美的小队距离，保持位置
+            creep.say('⚔️ squad');
         } else {
-            // Good distance, stay in position
-            // 距离合适，保持位置
-            creep.say('✅ follow');
+            // Same position is not possible, try to move to adjacent position
+            // 同一位置不可能，尝试移动到相邻位置
+            const adjacentPositions = this.getAdjacentPositions(attacker.pos);
+            const validPosition = adjacentPositions.find(pos => 
+                pos.lookFor(LOOK_CREEPS).length === 0 && 
+                pos.lookFor(LOOK_STRUCTURES).filter(s => s.structureType !== STRUCTURE_ROAD).length === 0
+            );
+            
+            if (validPosition) {
+                creep.moveTo(validPosition, {visualizePathStyle: {stroke: '#00ff00'}});
+                creep.say('📍 adj');
+            } else {
+                creep.say('⚔️ squad'); // Stay where we are if no valid adjacent position
+            }
         }
+    },
+    
+    /**
+     * Get all adjacent positions around a given position
+     * 获取指定位置周围的所有相邻位置
+     */
+    getAdjacentPositions: function(pos) {
+        const positions = [];
+        for (let dx = -1; dx <= 1; dx++) {
+            for (let dy = -1; dy <= 1; dy++) {
+                if (dx === 0 && dy === 0) continue; // Skip center position
+                const x = pos.x + dx;
+                const y = pos.y + dy;
+                if (x >= 0 && x <= 49 && y >= 0 && y <= 49) {
+                    positions.push(new RoomPosition(x, y, pos.roomName));
+                }
+            }
+        }
+        return positions;
     },
 
     /**
@@ -143,10 +172,16 @@ var roleHealer = {
             return true;
         }
         
-        // Check for other damaged creeps nearby
-        // 检查附近其他受损的爬虫
-        const damagedCreeps = creep.pos.findInRange(FIND_MY_CREEPS, 3, {
-            filter: (c) => c.hits < c.hitsMax
+        // Check for other damaged creeps nearby (from whitelist only)
+        // 检查附近其他受损的爬虫（仅限白名单中的）
+        const damagedCreeps = creep.pos.findInRange(FIND_CREEPS, 3, {
+            filter: (c) => {
+                // Only heal creeps from whitelisted players or own creeps
+                // 只治疗白名单玩家的爬虫或自己的爬虫
+                const isWhitelisted = config.whitelist && config.whitelist.includes(c.owner.username);
+                const isOwnCreep = c.my;
+                return (isWhitelisted || isOwnCreep) && c.hits < c.hitsMax;
+            }
         });
         
         return damagedCreeps.length > 0;
@@ -173,9 +208,9 @@ var roleHealer = {
             creep.heal(creep);
             creep.say('💚 self');
             
-            // Stay close to attacker while healing self
-            // 治疗自己时保持靠近攻击者
-            if (attacker && creep.pos.getRangeTo(attacker) > 2) {
+            // Stay in squad formation while healing self
+            // 治疗自己时保持小队编队
+            if (attacker && creep.pos.getRangeTo(attacker) > 1) {
                 creep.moveTo(attacker, {visualizePathStyle: {stroke: '#00ff00'}});
             }
             return;
@@ -187,26 +222,24 @@ var roleHealer = {
             const distance = creep.pos.getRangeTo(attacker);
             
             if (distance <= 1) {
-                // Close range healing
-                // 近距离治疗
+                // Close range healing (optimal for squad formation)
+                // 近距离治疗（小队编队的最佳选择）
                 creep.heal(attacker);
                 creep.say('💚 att');
             } else if (distance <= 3) {
-                // Ranged healing
-                // 远程治疗
+                // Ranged healing while moving closer
+                // 远程治疗同时靠近
                 creep.rangedHeal(attacker);
                 creep.say('💙 ratt');
                 
-                // Move closer for better healing
-                // 靠近以获得更好的治疗效果
-                if (distance > 1) {
-                    creep.moveTo(attacker, {visualizePathStyle: {stroke: '#00ff00'}});
-                }
-            } else {
-                // Too far, move closer
-                // 距离太远，靠近
+                // Move closer to maintain squad formation
+                // 靠近以保持小队编队
                 creep.moveTo(attacker, {visualizePathStyle: {stroke: '#00ff00'}});
-                creep.say('🏃 heal');
+            } else {
+                // Too far, prioritize getting into squad formation
+                // 距离太远，优先进入小队编队
+                creep.moveTo(attacker, {visualizePathStyle: {stroke: '#00ff00'}});
+                creep.say('🏃 squad');
             }
             return;
         }
@@ -219,10 +252,16 @@ var roleHealer = {
             return;
         }
         
-        // Priority 4: Heal other nearby damaged creeps
-        // 优先级4：治疗附近其他受损的爬虫
-        const damagedCreeps = creep.pos.findInRange(FIND_MY_CREEPS, 3, {
-            filter: (c) => c.hits < c.hitsMax && c.id !== creep.id
+        // Priority 4: Heal other nearby damaged creeps (from whitelist only)
+        // 优先级4：治疗附近其他受损的爬虫（仅限白名单中的）
+        const damagedCreeps = creep.pos.findInRange(FIND_CREEPS, 3, {
+            filter: (c) => {
+                // Only heal creeps from whitelisted players or own creeps (excluding self)
+                // 只治疗白名单玩家的爬虫或自己的爬虫（排除自己）
+                const isWhitelisted = config.whitelist && config.whitelist.includes(c.owner.username);
+                const isOwnCreep = c.my;
+                return (isWhitelisted || isOwnCreep) && c.hits < c.hitsMax && c.id !== creep.id;
+            }
         });
         
         if (damagedCreeps.length > 0) {

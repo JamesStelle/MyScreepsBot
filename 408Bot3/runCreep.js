@@ -14,7 +14,7 @@ function safeRequire(moduleName) {
 var roleHarvester = safeRequire('role.harvester');
 var roleHarvester0 = safeRequire('role.harvester0');
 var roleHarvester1 = safeRequire('role.harvester1');
-var roleHarvesterMineral = safeRequire('role.harvesterMineral');
+//var roleHarvesterMineral = safeRequire('role.harvesterMineral');
 var roleBuilder = safeRequire('role.builder');
 var roleUpgrader = safeRequire('role.upgrader');    
 var roleCarrier = safeRequire('role.carrier');
@@ -24,13 +24,13 @@ var roleAttacker = safeRequire('role.attacker');
 var roleHealer = safeRequire('role.healer');
 var roleDefender = safeRequire('role.defender');
 var roleSigner = safeRequire('role.signer');
-var roleRepairerWall = safeRequire('role.repairerWall');
-var roleRepairerRoad = safeRequire('role.repairerRoad');
-var roleRepairerContainer = safeRequire('role.repairerContainer');
-var roleStrikerEureka = safeRequire('role.StrikerEureka');
-var roleChernoAlpha = safeRequire('role.ChernoAlpha');
-var roleCrimsonTyphoon = safeRequire('role.CrimsonTyphoon');
-var roleGipsyDanger = safeRequire('role.GipsyDanger');
+//var roleRepairerWall = safeRequire('role.repairerWall');
+//var roleRepairerRoad = safeRequire('role.repairerRoad');
+//var roleRepairerContainer = safeRequire('role.repairerContainer');
+//var roleStrikerEureka = safeRequire('role.StrikerEureka');
+//var roleChernoAlpha = safeRequire('role.ChernoAlpha');
+//var roleCrimsonTyphoon = safeRequire('role.CrimsonTyphoon');
+//var roleGipsyDanger = safeRequire('role.GipsyDanger');
 
 // Map roles to their corresponding modules (only if successfully loaded)
 // 中文: 将角色映射到其对应的模块（仅当成功加载时）

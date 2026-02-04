@@ -187,7 +187,7 @@ var runGeneralRoom = {
             harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1350 energy
             carrier: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1350 energy
             carrierMineral: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1350 energy
-            upgrader: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1450 energy
+            upgrader: [MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,CARRY,CARRY], // 1450 energy
             builder: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE] // 1400 energy
         },
         
@@ -896,12 +896,33 @@ var runGeneralRoom = {
     // Main run function (placeholder for future use)
     // 主运行函数（为将来使用的占位符）
     run: function() {
+        // Initialize system status tracking if not exists
+        // 如果不存在则初始化系统状态跟踪
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {
+                initialized: false,
+                lastLogTick: 0,
+                logInterval: 100 // 每100个tick输出一次状态
+            };
+        }
+        
         // Get excluded rooms from config
         // 从配置文件获取排除的房间
         var excludeRooms = config.excludeRooms || [];
         
-        console.log('🏠 runGeneralRoom: 通用房间管理系统启动');
-        console.log('📋 排除房间: ' + excludeRooms.join(', '));
+        // Only log startup message once or every logInterval ticks
+        // 只在首次或每隔logInterval个tick输出启动信息
+        var shouldLog = !Memory.runGeneralRoomStatus.initialized || 
+                       (Game.time - Memory.runGeneralRoomStatus.lastLogTick) >= Memory.runGeneralRoomStatus.logInterval;
+        
+        if (shouldLog) {
+            console.log('🏠 runGeneralRoom: 通用房间管理系统启动');
+            console.log('📋 排除房间: ' + excludeRooms.join(', '));
+            Memory.runGeneralRoomStatus.lastLogTick = Game.time;
+            Memory.runGeneralRoomStatus.initialized = true;
+        }
+        
+        var processedRooms = 0;
         
         // Loop through all owned rooms
         // 轮询所有拥有的房间
@@ -914,7 +935,13 @@ var runGeneralRoom = {
                 continue;
             }
             
-            console.log('🔄 处理房间: ' + roomName);
+            processedRooms++;
+            
+            // Only log room processing if shouldLog is true
+            // 只在shouldLog为true时输出房间处理信息
+            if (shouldLog) {
+                console.log('🔄 处理房间: ' + roomName);
+            }
             
             // Future implementation will include:
             // 未来的实现将包括：
@@ -924,7 +951,11 @@ var runGeneralRoom = {
             // - Adaptive strategies based on room development
         }
         
-        console.log('✅ runGeneralRoom: 处理完成');
+        // Only log completion message if shouldLog is true
+        // 只在shouldLog为true时输出完成信息
+        if (shouldLog) {
+            console.log('✅ runGeneralRoom: 处理完成 (处理了' + processedRooms + '个房间)');
+        }
     },
 
     // Poll all owned rooms and analyze their status
@@ -1550,6 +1581,78 @@ var runGeneralRoom = {
     // help命令的简写别名
     h: function(category) {
         this.help(category);
+    },
+    
+    // Set log interval for run function
+    // 设置run函数的日志输出间隔
+    setLogInterval: function(interval) {
+        if (!interval || interval < 1) {
+            console.log('❌ 无效的间隔时间，必须大于0');
+            return false;
+        }
+        
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {};
+        }
+        
+        Memory.runGeneralRoomStatus.logInterval = interval;
+        console.log('✅ 日志输出间隔已设置为: ' + interval + ' tick');
+        return true;
+    },
+    
+    // Enable logging for run function
+    // 启用run函数的日志输出
+    enableLogging: function() {
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {};
+        }
+        
+        Memory.runGeneralRoomStatus.logInterval = 1; // 每tick都输出
+        Memory.runGeneralRoomStatus.lastLogTick = 0; // 重置计时器
+        console.log('✅ 已启用日志输出 (每tick输出)');
+        return true;
+    },
+    
+    // Disable logging for run function
+    // 禁用run函数的日志输出
+    disableLogging: function() {
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {};
+        }
+        
+        Memory.runGeneralRoomStatus.logInterval = Infinity; // 永不输出
+        console.log('✅ 已禁用日志输出');
+        return true;
+    },
+    
+    // Get system status
+    // 获取系统状态
+    getSystemStatus: function() {
+        if (!Memory.runGeneralRoomStatus) {
+            console.log('❌ 系统尚未初始化');
+            return null;
+        }
+        
+        var status = Memory.runGeneralRoomStatus;
+        var nextLogIn = status.logInterval - (Game.time - status.lastLogTick);
+        
+        console.log('🔧 runGeneralRoom系统状态:');
+        console.log('─'.repeat(40));
+        console.log('初始化状态: ' + (status.initialized ? '✅ 已初始化' : '❌ 未初始化'));
+        console.log('日志间隔: ' + status.logInterval + ' tick');
+        console.log('上次日志: tick ' + status.lastLogTick);
+        console.log('当前tick: tick ' + Game.time);
+        
+        if (status.logInterval === Infinity) {
+            console.log('下次日志: 已禁用');
+        } else if (nextLogIn <= 0) {
+            console.log('下次日志: 下个tick');
+        } else {
+            console.log('下次日志: ' + nextLogIn + ' tick后');
+        }
+        
+        console.log('─'.repeat(40));
+        return status;
     },
 
     // Show spawn quantity management help
