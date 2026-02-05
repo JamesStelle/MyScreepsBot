@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Screeps-Texture-Viewer - 获取Screeps Texture URL 详细指南</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+            line-height: 1.6;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        .method {
+            background-color: #e3f2fd;
+            border-left: 4px solid #2196F3;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 0 4px 4px 0;
+        }
+        .method h3 {
+            margin-top: 0;
+            color: #1976d2;
+        }
+        .step {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        .step h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .code {
+            background-color: #f4f4f4;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 14px;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .highlight {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .tip {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .warning {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+        }
+        .button {
+            display: inline-block;
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 10px 5px;
+        }
+        .button:hover {
+            background-color: #45a049;
+        }
+        ol {
+            padding-left: 20px;
+        }
+        li {
+            margin: 8px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Screeps-Texture-Viewer 使用指南</h1>
+        <p>本指南将教你如何从Steam市场页面获取Screeps texture的图片URL，然后转换为800x800高分辨率版本。</p>
+
+        <div class="method">
+            <h3>🖱️ 方法1: 右键获取图片 (简单)</h3>
+            <p><strong>优势:</strong> 操作简单，不需要使用开发者工具</p>
+
+            <div class="step">
+                <h4>步骤1: 找到缩略图</h4>
+                <ol>
+                    <li>在Steam市场页面找到texture的缩略图</li>
+                    <li>通常在页面左侧或顶部显示</li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h4>步骤2: 获取图片URL</h4>
+                <ol>
+                    <li><strong>右键点击</strong>缩略图</li>
+                    <li>选择<strong>"复制图片地址"</strong></li>
+                    <li>URL已复制到剪贴板，可以直接粘贴使用</li>
+                </ol>
+                <div class="warning">
+                    ⚠️ <strong>注意:</strong> 这种方法获取的图片通常是较小的尺寸（如330x192）
+                </div>
+            </div>
+        </div>
+
+        <div class="method">
+            <h3>🔧 方法2: 开发者工具获取 (高质量)</h3>
+            <p><strong>优势:</strong> 最直接，获取到的URL通常是360x360的高质量版本</p>
+
+            <div class="step">
+                <h4>步骤1: 打开Steam市场页面</h4>
+                <ol>
+                    <li>访问Steam社区市场</li>
+                    <li>搜索并打开任意Screeps texture页面</li>
+                    <li>例如: <code>https://steamcommunity.com/market/listings/464350/F-00095%3ACC%3AX</code></li>
+                </ol>
+            </div>
+
+            <div class="step">
+                <h4>步骤2: 打开开发者工具</h4>
+                <ol>
+                    <li>按 <strong>F12</strong> 键（或右键页面选择"检查"）</li>
+                    <li>确保在 <strong>Elements</strong> 标签页中</li>
+                </ol>
+                <div class="tip">
+                    💡 <strong>提示:</strong> 如果开发者工具没有打开，也可以按 Ctrl+Shift+I (Windows) 或 Cmd+Option+I (Mac)
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>步骤3: 搜索图片URL</h4>
+                <ol>
+                    <li>在Elements面板中按 <strong>Ctrl+F</strong> 打开搜索框</li>
+                    <li>搜索: <code>image_src</code></li>
+                    <li>找到类似这样的标签:</li>
+                </ol>
+                <div class="code">
+&lt;link rel="image_src" href="https://community.steamstatic.com/economy/image/rtOnLXYUD-u65eusOk-nO4hCpUCJo2NbTFgyVoRu1dTMUtrgwQcK00wcDPtguX6_6cpCjkj5KCLzRKX8j0q3Yji5umhEwn0Cjhgkm40MUW3kqczfGShQbGJ-wsYuY_ybvHXycjiV/360fx360f"&gt;
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>步骤4: 复制URL</h4>
+                <ol>
+                    <li>右键点击 <code>href</code> 中的URL</li>
+                    <li>选择"复制链接地址"或直接选中文本复制</li>
+                    <li>得到的URL类似: <code>https://community.steamstatic.com/economy/image/.../360fx360f</code></li>
+                </ol>
+                <div class="highlight">
+                    🎯 <strong>注意:</strong> URL末尾的 <code>360fx360f</code> 表示这是360x360的图片
+                </div>
+            </div>
+        </div>
+
+        <div class="method">
+            <h3>🔄 转换为高分辨率</h3>
+            <p>获取到URL后，使用我们的工具转换为800x800高分辨率版本</p>
+
+            <div class="step">
+                <h4>支持的URL格式</h4>
+                <p>我们的工具支持以下所有格式的URL:</p>
+                <div class="code">
+✅ https://community.steamstatic.com/economy/image/.../360fx360f
+✅ https://community.steamstatic.com/economy/image/.../330x192
+✅ https://community.steamstatic.com/economy/image/.../256x256
+✅ 其他任何尺寸格式
+                </div>
+            </div>
+
+            <div class="step">
+                <h4>转换过程</h4>
+                <ol>
+                    <li>将获取的URL粘贴到转换工具中</li>
+                    <li>点击"转换为800x800高分辨率"</li>
+                    <li>预览转换后的高清图片</li>
+                    <li>下载或复制高分辨率URL</li>
+                </ol>
+            </div>
+        </div>
+
+        <div class="tip">
+            <h3>💡 实用技巧</h3>
+            <ul>
+                <li><strong>新手推荐方法1</strong>: 右键获取简单易懂，适合快速上手</li>
+                <li><strong>追求质量用方法2</strong>: 开发者工具获取的URL质量更高（360x360 vs 330x192）</li>
+                <li><strong>批量处理</strong>: 可以重复使用工具处理多个texture</li>
+                <li><strong>保存URL</strong>: 转换后的800x800 URL可以直接保存使用</li>
+                <li><strong>预览效果</strong>: 在购买前先预览texture的实际效果</li>
+            </ul>
+        </div>
+
+        <div class="highlight">
+            <h3>🚀 开始使用</h3>
+            <p>现在你已经了解了获取URL的方法，可以开始使用转换工具了！</p>
+            <a href="Texture.html" class="button">🔧 打开转换工具</a>
+        </div>
+    </div>
+</body>
+</html>
