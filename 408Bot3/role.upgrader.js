@@ -154,24 +154,18 @@ var roleUpgrader = {
                             }
                         }
                     }
-                    // Priority 3: If no containers exist, harvest from sources
-                    // 优先级3：如果没有容器，从能量源采集
+                    // 优先级3：如果没有容器，从能量源采集，不绑定source[0]
                     else {
                         var sources = creep.room.find(FIND_SOURCES);
-                        creep.say('⛏️ harvest');
-                        if(creep.harvest(sources[0]) == ERR_NOT_IN_RANGE) {
-                            creep.moveTo(sources[0], {visualizePathStyle: {stroke: '#ffaa00'}});
+                        if(sources.length > 0) {
+                            // 寻找最近的可用能量源
+                            var targetSource = creep.pos.findClosestByRange(sources);
+                            creep.say('⛏️ 采集');
+                            if(creep.harvest(targetSource) == ERR_NOT_IN_RANGE) {
+                                creep.moveTo(targetSource, {visualizePathStyle: {stroke: '#ffaa00'}});
+                            }
                         }
                     }
-                }
-            }
-            // Fallback: harvest from sources if no controller
-            // 备选：如果没有控制器则从能量源采集
-            else {
-                var sources = creep.room.find(FIND_SOURCES);
-                creep.say('⛏️ harvest');
-                if(creep.harvest(sources[0]) == ERR_NOT_IN_RANGE) {
-                    creep.moveTo(sources[0], {visualizePathStyle: {stroke: '#ffaa00'}});
                 }
             }
         }

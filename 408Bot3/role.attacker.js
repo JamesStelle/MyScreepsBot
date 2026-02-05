@@ -1,3 +1,136 @@
+/*
+ * ========================================
+ * ATTACKER 角色使用教程
+ * ========================================
+ * 
+ * Attacker是智能攻击角色，支持跨房间作战、智能寻路和目标优先级攻击。
+ * 配合Healer角色可以形成强大的双人攻击小队。
+ * 
+ * 📋 主要功能:
+ * - 跨房间智能寻路 (高速公路优先)
+ * - 目标房间动态配置 (通过Memory存储)
+ * - 攻击优先级系统 (塔楼→孵化器→其他建筑)
+ * - 自动障碍物清理 (墙壁和城墙)
+ * - 状态机管理 (移动→攻击→巡逻)
+ * 
+ * 🚀 快速开始:
+ * 
+ * 1. 设置攻击目标:
+ *    roleAttacker.setTargetRoom("E45N9")  // 设置目标房间
+ * 
+ * 2. 生成攻击者:
+ *    Game.spawns['Spawn1'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], 'attacker1', {memory: {role: 'attacker'}})
+ * 
+ * 3. 可选：生成治疗者组成双人小队:
+ *    Game.spawns['Spawn1'].spawnCreep([HEAL,HEAL,MOVE,MOVE], 'healer1', {memory: {role: 'healer'}})
+ * 
+ * 4. 攻击者会自动:
+ *    - 移动到目标房间
+ *    - 按优先级攻击敌方建筑
+ *    - 清理路径上的障碍物
+ *    - 完成后进入巡逻模式
+ * 
+ * 💻 控制台命令:
+ * 
+ * // 目标房间管理
+ * roleAttacker.setTargetRoom("E45N9")     // 设置目标房间
+ * roleAttacker.clearTargetRoom()          // 清除目标房间
+ * 
+ * // 攻击模式设置
+ * roleAttacker.setAttackMode("destroy")   // 摧毁模式 (默认)
+ * roleAttacker.setAttackMode("raid")      // 突袭模式
+ * roleAttacker.setAttackMode("scout")     // 侦察模式
+ * 
+ * // 状态查看
+ * roleAttacker.showStatus()               // 显示所有攻击者状态
+ * 
+ * 🎯 攻击优先级:
+ * 
+ * 1. 路径障碍物 - 阻挡移动的墙壁和城墙 (最高优先级)
+ * 2. 塔楼 (STRUCTURE_TOWER) - 主要威胁目标
+ * 3. 孵化器 (STRUCTURE_SPAWN) - 生产设施
+ * 4. 其他敌对建筑 - 次要目标
+ * 
+ * 🗺️ 智能寻路:
+ * 
+ * - 高速公路房间 (坐标%10=0) - 优先级1
+ * - 过道房间 (无控制器) - 优先级2  
+ * - 中性房间 (有控制器无主人) - 优先级3
+ * - 其他房间 - 优先级10
+ * 
+ * 📊 状态显示:
+ * - 🚀 moving: 正在移动到目标房间
+ * - 🎯 tower: 正在攻击塔楼
+ * - 🎯 spawn: 正在攻击孵化器
+ * - 🎯 struct: 正在攻击其他建筑
+ * - 💥 wall: 正在清理障碍物
+ * - 👁️ patrol: 巡逻模式 (无目标时)
+ * 
+ * 🔧 高级配置:
+ * 
+ * // 批量生成攻击小队
+ * for(let i = 1; i <= 3; i++) {
+ *     Game.spawns['Spawn1'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], `attacker${i}`, {memory: {role: 'attacker'}})
+ *     Game.spawns['Spawn1'].spawnCreep([HEAL,HEAL,MOVE,MOVE], `healer${i}`, {memory: {role: 'healer'}})
+ * }
+ * 
+ * // 设置不同攻击模式
+ * roleAttacker.setAttackMode("raid")      // 突袭：快进快出
+ * roleAttacker.setAttackMode("destroy")   // 摧毁：彻底破坏
+ * roleAttacker.setAttackMode("scout")     // 侦察：收集情报
+ * 
+ * // 动态目标切换
+ * roleAttacker.setTargetRoom("E45N9")     // 攻击房间1
+ * // 等待攻击完成...
+ * roleAttacker.setTargetRoom("W10S20")    // 切换到房间2
+ * 
+ * 🤝 双人小队配合:
+ * 
+ * Attacker + Healer 组成紧密编队:
+ * - Healer自动寻找并跟随Attacker
+ * - 保持1格距离的战术编队
+ * - Healer优先治疗Attacker
+ * - 支持白名单盟友治疗
+ * 
+ * 编队示例:
+ * ```
+ * H . .    . H .    . . H
+ * . A .    . A .    . A .
+ * . . .    . . .    . . .
+ * ```
+ * A=Attacker, H=Healer
+ * 
+ * 💡 战术技巧:
+ * 
+ * 1. 路径规划: 系统自动选择最安全的路径
+ * 2. 障碍清理: 遇到墙壁会自动攻击，无需手动操作
+ * 3. 目标切换: 可以随时更改目标房间，所有攻击者会自动更新
+ * 4. 编队作战: Healer会自动跟随，形成高效战斗单位
+ * 5. 持续作战: 攻击完成后会巡逻，等待新目标
+ * 
+ * ⚠️ 注意事项:
+ * 
+ * - 确保攻击者有足够的ATTACK部件
+ * - 跨房间移动需要时间，请耐心等待
+ * - 敌方防御可能很强，建议多个攻击者协同
+ * - 设置目标前确认房间名称格式正确 (如E45N9)
+ * - 攻击者会攻击所有敌对建筑，包括中性玩家的建筑
+ * 
+ * 🔗 相关系统:
+ * - role.healer: 治疗者支援系统
+ * - config.whitelist: 友方玩家白名单
+ * - Memory.attackerConfig: 攻击配置存储
+ * - runGeneralRoom: 自动爬虫生成
+ * 
+ * 📈 性能优化:
+ * - 路径缓存: 减少重复计算
+ * - 智能寻路: 避开危险区域
+ * - 状态机: 高效的行为管理
+ * - 内存管理: 自动清理无效数据
+ * 
+ * ========================================
+ */
+
 var roleAttacker = {
 
     /** @param {Creep} creep **/

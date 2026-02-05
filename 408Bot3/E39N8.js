@@ -23,7 +23,7 @@ module.exports = {
             carrier: 2,
             carrierMineral: 1,
             upgrader: 1,
-            builder: 1,
+            builder: 0,
         };
     },
 

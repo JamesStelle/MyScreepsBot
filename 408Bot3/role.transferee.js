@@ -1,3 +1,92 @@
+/*
+ * ========================================
+ * TRANSFEREE 角色使用教程
+ * ========================================
+ * 
+ * Transferee是基于memorySegmented分段内存系统的自动化搬运角色。
+ * 它能够自动从6个分段中获取激活的搬运任务并执行。
+ * 
+ * 📋 支持的搬运任务:
+ * - 分段0: Storage → Lab 搬运任务
+ * - 分段1: Lab → Storage 搬运任务  
+ * - 分段2: Storage → Terminal 搬运任务
+ * - 分段3: Terminal → Storage 搬运任务
+ * - 分段4: Terminal → Lab 搬运任务
+ * - 分段5: Lab → Terminal 搬运任务
+ * 
+ * 🚀 快速开始:
+ * 
+ * 1. 激活分段内存任务:
+ *    memorySegmented.updateResourceType("H")           // Storage→Lab搬运氢气
+ *    memorySegmented.updateLabResourceType("energy")   // Lab→Storage搬运能量
+ *    memorySegmented.updateTerminalResourceType("power") // Storage→Terminal搬运power
+ * 
+ * 2. 生成transferee爬虫:
+ *    Game.spawns['Spawn1'].spawnCreep([CARRY,CARRY,MOVE], 'transferee1', {memory: {role: 'transferee'}})
+ * 
+ * 3. 爬虫会自动:
+ *    - 检测激活的任务 (status='active' 且 resourceType不为null)
+ *    - 分配到合适的分段 (基于爬虫名称哈希)
+ *    - 执行搬运工作
+ *    - 显示实时状态
+ * 
+ * 💻 控制台命令:
+ * 
+ * // 查看所有transferee状态
+ * roleTransferee.showStatus()
+ * 
+ * // 手动分配爬虫到特定分段
+ * roleTransferee.assignTask("transferee1", 0)  // 分配到分段0 (Storage→Lab)
+ * roleTransferee.assignTask("transferee2", 2)  // 分配到分段2 (Storage→Terminal)
+ * 
+ * // 清除爬虫分配
+ * roleTransferee.clearAssignment("transferee1")
+ * 
+ * 🎯 工作原理:
+ * 
+ * 1. 任务检测: 扫描分段0-5，寻找status='active'的任务
+ * 2. 智能分配: 基于爬虫名称哈希自动分配到不同分段，避免冲突
+ * 3. 结构查找: 自动找到房间内的Storage、Terminal、Lab结构
+ * 4. 状态机: 收集状态 ↔ 传输状态 自动切换
+ * 5. 实时反馈: 显示当前任务、资源类型、传输路径
+ * 
+ * 📊 状态显示:
+ * - 🔍 collect: 正在收集资源
+ * - 🚚 deliver: 正在传输资源
+ * - ⏳ wait: 等待任务分配
+ * - ❌ no target: 没有激活的任务
+ * 
+ * 🔧 高级配置:
+ * 
+ * // 多个transferee并行工作
+ * for(let i = 1; i <= 3; i++) {
+ *     Game.spawns['Spawn1'].spawnCreep([CARRY,CARRY,MOVE], `transferee${i}`, {memory: {role: 'transferee'}})
+ * }
+ * 
+ * // 激活多个任务
+ * memorySegmented.updateResourceType("H")              // 分段0: Storage→Lab氢气
+ * memorySegmented.updateLabResourceType("O")           // 分段1: Lab→Storage氧气
+ * memorySegmented.updateTerminalResourceType("energy") // 分段2: Storage→Terminal能量
+ * 
+ * 💡 使用技巧:
+ * - transferee会自动分配到不同分段，避免多个爬虫争抢同一任务
+ * - 可以同时激活多个分段的任务，系统会智能分配
+ * - 使用roleTransferee.showStatus()随时查看工作状态
+ * - 任务完成后爬虫会持续工作，无需重新分配
+ * 
+ * ⚠️ 注意事项:
+ * - 确保房间内有对应的结构 (Storage/Terminal/Lab)
+ * - 分段内存任务必须先激活 (设置resourceType)
+ * - 爬虫需要足够的CARRY部件来搬运资源
+ * 
+ * 🔗 相关系统:
+ * - memorySegmented: 分段内存任务管理
+ * - runGeneralRoom: 自动爬虫生成
+ * - main.js: 系统集成和错误处理
+ * 
+ * ========================================
+ */
+
 var roleTransferee = {
 
     /** @param {Creep} creep **/
