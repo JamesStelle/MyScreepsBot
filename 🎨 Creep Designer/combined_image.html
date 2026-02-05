@@ -10,7 +10,7 @@
             max-width: 1200px;
             margin: 0 auto;
             padding: 20px;
-            background-color: #f5f5f5;
+            background-color: #2a2a2a;
         }
         .container {
             background: white;
@@ -289,8 +289,9 @@
                 // 更新画布信息
                 canvasInfo.textContent = `输出尺寸：${outputSize} × ${outputSize} 像素`;
 
-                // 清除画布（透明背景）
-                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                // 设置画布背景色为 #2a2a2a
+                ctx.fillStyle = '#2a2a2a';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
 
                 // 直接依次绘制所有图片，自然重叠
                 for (let i = 0; i < uploadedImages.length; i++) {
