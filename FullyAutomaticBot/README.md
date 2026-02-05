@@ -1,173 +1,223 @@
 # Screeps AI Bot
 
-一个功能完整的 Screeps 游戏 AI 机器人，具有智能爬虫管理、房间监控和自动化建设功能。
+一个功能完整的 Screeps 游戏 AI 机器人，支持自动化房间管理、资源采集、建造、攻击和防御。
 
-## 功能特性
-
-### 🤖 智能爬虫管理
-- **多角色系统**: 支持采集者、建造者、升级者、运输者等多种角色
-- **状态机逻辑**: 爬虫根据任务状态智能切换行为
-- **错误处理**: 完善的错误处理机制，防止单个爬虫错误影响整体运行
-- **角色优化**: 每个角色都有专门的行为逻辑和优先级系统
+## 🚀 主要功能
 
 ### 🏠 房间管理系统
-- **自动化建设**: 智能建造和维护房间基础设施
-- **能量管理**: 高效的能量收集、存储和分配系统
-- **防御系统**: 自动塔楼防御，支持友方玩家白名单
-- **Link 网络**: 智能 Link 传输系统优化能量流动
+- **runGeneralRoom**: 通用房间管理，支持RCL1-8的自适应配置
+- **自动爬虫生成**: 基于房间等级的智能爬虫数量管理
+- **能量容量计算**: 精确计算不同RCL等级的能量容量和单次生产限制
 
-### 📊 PRTS 监控系统
-精密侦察战术支援系统 (Precision Reconnaissance and Tactical Support)
+### 🤖 爬虫角色系统
+- **harvester0/harvester1**: 专用能量源采集者，支持Link传输
+- **carrier**: 智能运输者，多优先级资源收集和分发
+- **carrierMineral**: 矿物专用运输者
+- **upgrader**: 控制器升级者，支持Link能量获取
+- **builder**: 建造者，自动建造和维修
+- **attacker**: 智能攻击者，支持跨房间作战
+- **healer**: 治疗者，紧密编队支援攻击者
+- **transferee**: 基于分段内存的自动化搬运系统
 
-- **房间停滞监控**: 自动检测房间能量停滞状态
-- **控制器能量跟踪**: 1500 tick 内控制器升级进度统计
-- **实时数据分析**: 详细的房间状态和爬虫性能分析
-- **可视化警告**: 房间内直观的状态提示
+### 📦 分段内存系统 (memorySegmented)
+- **6个搬运任务**: Storage↔Lab, Storage↔Terminal, Terminal↔Lab
+- **动态配置**: 控制台实时设置资源类型和任务状态
+- **自动初始化**: 系统启动时自动激活分段0-5
+- **完整控制台界面**: 支持任务管理、状态查看、帮助系统
 
-### 🛡️ 安全特性
-- **模块化设计**: 安全的模块加载机制，单个模块错误不影响整体
-- **内存清理**: 自动清理无效爬虫内存，防止内存泄漏
-- **友方识别**: 可配置的友方玩家白名单系统
+### ⚔️ 战斗系统
+- **目标房间配置**: 通过Memory存储，支持动态目标切换
+- **智能寻路**: 高速公路优先的跨房间路径规划
+- **双人小队**: Attacker + Healer 紧密编队作战
+- **障碍物清理**: 自动攻击阻挡路径的墙壁和城墙
+- **白名单治疗**: 基于config.whitelist的盟友识别
 
-## 项目结构
+### 🔧 系统工具
+- **PRTS**: 精密侦察战术支援系统，房间停滞监控
+- **Tower**: 自动防御塔管理
+- **Link**: 智能Link网络管理
+- **memoryCleaner**: 内存清理和优化
+- **pixelGenerator**: 像素生成管理
 
+## 📋 快速开始
+
+### 1. 基础设置
+```javascript
+// 查看系统状态
+runGeneralRoom.quickStatus()
+
+// 分析房间配置
+runGeneralRoom.analyzeRoom("E39N8")
+
+// 查看爬虫生成需求
+runGeneralRoom.checkSpawnNeeds("E39N8")
 ```
-├── main.js                 # 主循环入口
-├── config.js              # 配置文件
-├── runCreep.js            # 爬虫管理器
-├── memoryCleaner.js       # 内存清理模块
-├── pixelGenerator.js      # 像素生成器
-├── PRTS.js               # 监控系统
-├── Tower.js              # 塔楼管理
-├── runLink.js            # Link 管理
-├── runGeneralRoom.js     # 通用房间管理
-└── role.*.js             # 各种角色模块
-    ├── role.harvester.js     # 采集者
-    ├── role.builder.js       # 建造者
-    ├── role.upgrader.js      # 升级者
-    ├── role.carrier.js       # 运输者
-    ├── role.defender.js      # 防御者
-    └── ...                   # 其他角色
+
+### 2. 分段内存配置
+```javascript
+// 查看帮助
+memorySegmented.help()
+
+// 设置Storage到Lab搬运氢气
+memorySegmented.updateResourceType("H")
+
+// 查看所有任务状态
+memorySegmented.displayAllTasks()
 ```
 
-## 快速开始
+### 3. 攻击系统配置
+```javascript
+// 设置攻击目标
+roleAttacker.setTargetRoom("E45N9")
 
-1. **部署代码**: 将所有文件上传到你的 Screeps 账户
-2. **配置设置**: 编辑 `config.js` 文件设置房间和白名单
-3. **启动系统**: 代码将自动开始运行
+// 查看攻击者状态
+roleAttacker.showStatus()
 
-### 配置选项
+// 生成攻击小队
+Game.spawns['Spawn1'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], 'attacker1', {memory: {role: 'attacker'}})
+Game.spawns['Spawn1'].spawnCreep([HEAL,HEAL,MOVE,MOVE], 'healer1', {memory: {role: 'healer'}})
+```
 
-编辑 `config.js` 文件：
+## 🎯 角色配置
 
+### RCL等级适配
+系统自动根据房间RCL等级调整：
+- **RCL1-2**: 基础生存配置，无carrier
+- **RCL3-5**: 标准发展配置，启用carrier
+- **RCL6-8**: 高级配置，启用矿物开采
+
+### 身体配置优化
+- 自动计算最大可用能量
+- 基于Extension数量的自适应配置
+- CPU效率优化的身体组合
+
+## 📊 控制台命令
+
+### 房间管理
+```javascript
+runGeneralRoom.pollRooms()                    // 轮询所有房间
+runGeneralRoom.displayCapacityTable()        // 显示容量表
+runGeneralRoom.setLogInterval(500)           // 设置日志间隔
+runGeneralRoom.disableLogging()              // 禁用日志输出
+```
+
+### 分段内存
+```javascript
+memorySegmented.init()                       // 初始化系统
+memorySegmented.checkSegmentStatus()         // 检查分段状态
+memorySegmented.updateResourceType("energy") // 设置资源类型
+memorySegmented.resetTask()                  // 重置任务
+```
+
+### 攻击系统
+```javascript
+roleAttacker.setTargetRoom("W10S20")         // 设置目标房间
+roleAttacker.setAttackMode("raid")           // 设置攻击模式
+roleAttacker.clearTargetRoom()               // 清除目标
+```
+
+### Transferee系统
+```javascript
+roleTransferee.showStatus()                  // 查看状态
+roleTransferee.assignTask("transferee1", 0)  // 分配任务
+roleTransferee.clearAssignment("transferee1") // 清除分配
+```
+
+## ⚙️ 配置文件
+
+### config.js
 ```javascript
 module.exports = {
-    // 排除在通用房间管理之外的房间
-    excludeRooms: ['房间号'],
-    
-    // 友方玩家白名单（塔楼不会攻击）
-    whitelist: ['FriendlyPlayer1', 'FriendlyPlayer2'],
+    excludeRooms: ['E39N8'],     // 排除房间
+    whitelist: ['MoSaSa'],       // 友方玩家白名单
 };
 ```
 
-## 爬虫角色说明
+## 🔄 系统架构
 
-### 基础角色
-- **harvester**: 基础采集者，采集能量并供应 spawn/extension
-- **harvester0/harvester1**: 专门的能量源采集者
-- **builder**: 建造者，负责建设和维修
-- **upgrader**: 升级者，专门升级控制器
-- **carrier**: 运输者，在建筑间运输资源
+### 主循环 (main.js)
+1. memoryCleaner - 内存清理
+2. memorySegmented - 分段内存管理
+3. pixelGenerator - 像素生成
+4. runCreep - 爬虫管理
+5. runRoom - 房间管理
+6. runGeneralRoom - 通用房间管理
+7. runLink - Link管理
+8. Tower - 塔楼管理
+9. PRTS - 监控系统
 
-### 高级角色
-- **defender**: 防御者，保护房间安全
-- **attacker**: 攻击者，用于进攻作战
-- **healer**: 治疗者，支援作战单位
-- **signer**: 签名者，为控制器签名
+### 错误处理
+- 全局错误捕获
+- 模块级错误隔离
+- 安全的require机制
+- 详细的错误日志
 
-## PRTS 监控系统使用
+## 🛡️ 安全特性
 
-### 基础命令
+- **白名单系统**: 防止误伤友方单位
+- **身份验证**: 确保只操作己方爬虫
+- **内存保护**: 防止内存泄漏和溢出
+- **错误恢复**: 自动恢复机制
+
+## 📈 性能优化
+
+- **CPU效率**: 优化的算法和缓存机制
+- **内存管理**: 自动清理无用内存
+- **路径缓存**: 减少重复路径计算
+- **状态机**: 高效的行为管理
+
+## 🔧 开发工具
+
+### 调试命令
 ```javascript
-// 查看所有爬虫
-prts.listCreeps()
+// 系统状态
+runGeneralRoom.getSystemStatus()
+memorySegmented.checkSegmentStatus()
 
-// 查看房间状态
-prts.energy("房间号")
+// 性能监控
+PRTS.monitorRoomStagnation()
 
-// 监控特定爬虫
-prts.monitor("Harvester1")
+// 内存分析
+memoryCleaner.run()
 ```
 
-### 停滞监控
+### 日志控制
 ```javascript
-// 查看房间停滞状态
-prts.stagnation("房间号")
+// 启用详细日志
+runGeneralRoom.enableLogging()
 
-// 清除停滞数据
-prts.clearStagnation("房间号")
+// 设置日志间隔
+runGeneralRoom.setLogInterval(100)
+
+// 禁用日志
+runGeneralRoom.disableLogging()
 ```
 
-### 控制器统计
-```javascript
-// 查看控制器能量统计
-prts.controllerStats("房间号")
+## 📝 更新日志
 
-// 清除统计数据
-prts.clearControllerStats("房间号")
-```
+### 最新功能
+- ✅ 分段内存系统完整实现
+- ✅ 攻击者目标房间配置
+- ✅ Healer紧密编队系统
+- ✅ Transferee自动化搬运
+- ✅ RCL自适应配置
+- ✅ Link网络支持
+- ✅ 白名单治疗系统
 
-### 帮助系统
-```javascript
-// 查看帮助菜单
-prts.help()
+### 计划功能
+- 🔄 自动建造规划
+- 🔄 市场交易系统
+- 🔄 多房间协调
+- 🔄 防御系统优化
 
-// 查看特定分类帮助
-prts.help("basic")      // 基础命令
-prts.help("controller") // 控制器命令
-prts.help("stagnation") // 停滞监控命令
-```
+## 🤝 贡献
 
-## 系统特性
+欢迎提交Issue和Pull Request来改进这个AI机器人！
 
-### 智能状态管理
-- 爬虫使用状态机模式，根据任务需求智能切换行为
-- 自动优先级调整，确保关键任务优先执行
-- 容错设计，单个爬虫错误不影响整体运行
+## 📄 许可证
 
-### 高效资源管理
-- 智能能量分配算法
-- 容器和 Link 网络优化
-- 自动建设队列管理
-
-### 实时监控
-- 房间停滞自动检测（能量维持 300+ 超过 1500 tick）
-- 控制器升级进度跟踪
-- 详细的性能统计和分析
-
-## 开发说明
-
-### 添加新角色
-1. 创建 `role.newRole.js` 文件
-2. 实现 `run(creep)` 方法
-3. 在 `runCreep.js` 中注册新角色
-
-### 自定义配置
-- 修改 `config.js` 添加新的配置选项
-- 在相关模块中引用配置
-
-### 扩展监控
-- 在 `PRTS.js` 中添加新的监控功能
-- 使用 Memory 存储持久化数据
-
-## 许可证
-
-本项目采用 MIT 许可证。
-
-## 贡献
-
-欢迎提交 Issue 和 Pull Request 来改进这个项目！
+MIT License - 详见LICENSE文件
 
 ---
 
-*这是一个为 Screeps 游戏设计的智能 AI 机器人，具有完整的房间管理、爬虫控制和实时监控功能。*
+**注意**: 这是一个功能完整的Screeps AI机器人，适合中高级玩家使用。建议在使用前仔细阅读代码并根据自己的需求进行调整。

@@ -58,8 +58,8 @@ var runGeneralRoom = {
             harvester1: 1,      // 采集者1数量
             carrier: 0,         // 运输者数量 - RCL1通常没有Container
             carrierMineral: 0,  // 矿物运输者数量 - RCL1没有矿物开采
-            upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            upgrader: 2,        // 升级者数量
+            builder: 2          // 建造者数量
         },
         
         // RCL2: 开始扩展，但Container可能还未建造
@@ -68,8 +68,8 @@ var runGeneralRoom = {
             harvester1: 1,      // 采集者1数量
             carrier: 0,         // 运输者数量 - RCL2可能还没有Container
             carrierMineral: 0,  // 矿物运输者数量 - RCL2没有矿物开采
-            upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            upgrader: 2,        // 升级者数量
+            builder: 2          // 建造者数量
         },
         
         // RCL3: 开始使用Container和更复杂的物流
@@ -187,7 +187,7 @@ var runGeneralRoom = {
             harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1350 energy
             carrier: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1350 energy
             carrierMineral: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1350 energy
-            upgrader: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1450 energy
+            upgrader: [MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,CARRY,CARRY], // 1450 energy
             builder: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE] // 1400 energy
         },
         
@@ -893,15 +893,40 @@ var runGeneralRoom = {
         console.log('═'.repeat(70));
     },
     
-    // Main run function (placeholder for future use)
-    // 主运行函数（为将来使用的占位符）
+    // Main run function with automatic creep spawning
+    // 主运行函数，包含自动爬虫生成功能
     run: function() {
+        // Initialize system status tracking if not exists
+        // 如果不存在则初始化系统状态跟踪
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {
+                initialized: false,
+                lastLogTick: 0,
+                logInterval: 100, // 每100个tick输出一次状态
+                spawnAttempts: 0,
+                successfulSpawns: 0
+            };
+        }
+        
         // Get excluded rooms from config
         // 从配置文件获取排除的房间
         var excludeRooms = config.excludeRooms || [];
         
-        console.log('🏠 runGeneralRoom: 通用房间管理系统启动');
-        console.log('📋 排除房间: ' + excludeRooms.join(', '));
+        // Only log startup message once or every logInterval ticks
+        // 只在首次或每隔logInterval个tick输出启动信息
+        var shouldLog = !Memory.runGeneralRoomStatus.initialized || 
+                       (Game.time - Memory.runGeneralRoomStatus.lastLogTick) >= Memory.runGeneralRoomStatus.logInterval;
+        
+        if (shouldLog) {
+            console.log('🏠 runGeneralRoom: 通用房间管理系统启动');
+            console.log('📋 排除房间: ' + excludeRooms.join(', '));
+            Memory.runGeneralRoomStatus.lastLogTick = Game.time;
+            Memory.runGeneralRoomStatus.initialized = true;
+        }
+        
+        var processedRooms = 0;
+        var totalSpawnAttempts = 0;
+        var totalSuccessfulSpawns = 0;
         
         // Loop through all owned rooms
         // 轮询所有拥有的房间
@@ -914,17 +939,176 @@ var runGeneralRoom = {
                 continue;
             }
             
-            console.log('🔄 处理房间: ' + roomName);
+            processedRooms++;
             
-            // Future implementation will include:
-            // 未来的实现将包括：
-            // - Automatic creep spawning based on room level
-            // - Dynamic resource management
-            // - Multi-room coordination
-            // - Adaptive strategies based on room development
+            // Only log room processing if shouldLog is true
+            // 只在shouldLog为true时输出房间处理信息
+            if (shouldLog) {
+                console.log('🔄 处理房间: ' + roomName);
+            }
+            
+            // Process spawning for this room
+            // 处理此房间的生成逻辑
+            var spawnResult = this.processRoomSpawning(roomName, shouldLog);
+            if (spawnResult) {
+                totalSpawnAttempts += spawnResult.attempts;
+                totalSuccessfulSpawns += spawnResult.successes;
+            }
         }
         
-        console.log('✅ runGeneralRoom: 处理完成');
+        // Update global statistics
+        // 更新全局统计
+        Memory.runGeneralRoomStatus.spawnAttempts += totalSpawnAttempts;
+        Memory.runGeneralRoomStatus.successfulSpawns += totalSuccessfulSpawns;
+        
+        // Only log completion message if shouldLog is true
+        // 只在shouldLog为true时输出完成信息
+        if (shouldLog) {
+            console.log('✅ runGeneralRoom: 处理完成 (处理了' + processedRooms + '个房间)');
+            if (totalSpawnAttempts > 0) {
+                console.log('🤖 本轮生成统计: 尝试' + totalSpawnAttempts + '次, 成功' + totalSuccessfulSpawns + '次');
+            }
+        }
+        
+        // Execute room monitoring if active
+        // 如果有活跃监控则执行
+        this.executeMonitoring();
+    },
+
+    // Process spawning logic for a single room
+    // 处理单个房间的生成逻辑
+    processRoomSpawning: function(roomName, shouldLog) {
+        var room = Game.rooms[roomName];
+        if (!room || !room.controller || !room.controller.my) {
+            return null;
+        }
+        
+        // Find available spawns in this room
+        // 查找此房间中可用的spawn
+        var spawns = room.find(FIND_STRUCTURES, {
+            filter: function(structure) {
+                return structure.structureType === STRUCTURE_SPAWN && !structure.spawning;
+            }
+        });
+        
+        if (spawns.length === 0) {
+            // No available spawns
+            // 没有可用的spawn
+            return { attempts: 0, successes: 0 };
+        }
+        
+        // Check what creeps need to be spawned
+        // 检查需要生成什么爬虫
+        var spawnNeeds = this.checkSpawnNeeds(roomName);
+        if (!spawnNeeds || spawnNeeds.spawnNeeds.length === 0) {
+            // No spawning needed
+            // 不需要生成
+            return { attempts: 0, successes: 0 };
+        }
+        
+        // Get spawn priority list
+        // 获取生成优先级列表
+        var priorityList = this.getSpawnPriorityList(roomName);
+        if (!priorityList || priorityList.priorityList.length === 0) {
+            return { attempts: 0, successes: 0 };
+        }
+        
+        // Get adaptive body configurations for this room
+        // 获取此房间的自适应身体配置
+        var adaptiveConfig = this.getAdaptiveRoleBodyConfigurations(roomName);
+        if (!adaptiveConfig) {
+            if (shouldLog) {
+                console.log('❌ 无法获取房间 ' + roomName + ' 的自适应配置');
+            }
+            return { attempts: 0, successes: 0 };
+        }
+        
+        var attempts = 0;
+        var successes = 0;
+        
+        // Try to spawn the highest priority creep with each available spawn
+        // 尝试用每个可用的spawn生成最高优先级的爬虫
+        for (var i = 0; i < spawns.length && i < priorityList.priorityList.length; i++) {
+            var spawn = spawns[i];
+            var spawnNeed = priorityList.priorityList[i];
+            var roleName = spawnNeed.role;
+            
+            // Get body configuration for this role
+            // 获取此角色的身体配置
+            var bodyConfig = adaptiveConfig.bodyConfigurations[roleName];
+            if (!bodyConfig) {
+                if (shouldLog) {
+                    console.log('❌ 未找到角色 ' + roleName + ' 的身体配置');
+                }
+                continue;
+            }
+            
+            // Calculate body cost
+            // 计算身体成本
+            var bodyCost = this.calculateBodyCost(bodyConfig);
+            
+            // Check if spawn has enough energy
+            // 检查spawn是否有足够能量
+            var availableEnergy = room.energyAvailable;
+            if (bodyCost > availableEnergy) {
+                if (shouldLog) {
+                    console.log('⚠️ 房间 ' + roomName + ' 能量不足: 需要' + bodyCost + ', 可用' + availableEnergy);
+                }
+                continue;
+            }
+            
+            // Generate unique creep name
+            // 生成唯一的爬虫名称
+            var creepName = this.generateCreepName(roleName, roomName);
+            
+            // Attempt to spawn creep
+            // 尝试生成爬虫
+            attempts++;
+            var spawnResult = spawn.spawnCreep(bodyConfig, creepName, {
+                memory: {
+                    role: roleName,
+                    room: roomName,
+                    working: false
+                }
+            });
+            
+            if (spawnResult === OK) {
+                successes++;
+                if (shouldLog) {
+                    console.log('✅ 成功生成: ' + creepName + ' (' + roleName + ') 在 ' + spawn.name + 
+                               ' | 成本: ' + bodyCost + ' | 房间: ' + roomName);
+                }
+            } else {
+                if (shouldLog) {
+                    console.log('❌ 生成失败: ' + creepName + ' (' + roleName + ') 在 ' + spawn.name + 
+                               ' | 错误: ' + this.getSpawnErrorMessage(spawnResult) + ' | 房间: ' + roomName);
+                }
+            }
+        }
+        
+        return { attempts: attempts, successes: successes };
+    },
+
+    // Generate unique creep name
+    // 生成唯一的爬虫名称
+    generateCreepName: function(roleName, roomName) {
+        var timestamp = Game.time.toString().slice(-4); // 取时间戳后4位
+        var roomCode = roomName.replace(/[^A-Z0-9]/g, ''); // 移除非字母数字字符
+        return roleName + '_' + roomCode + '_' + timestamp;
+    },
+
+    // Get spawn error message
+    // 获取生成错误信息
+    getSpawnErrorMessage: function(errorCode) {
+        switch(errorCode) {
+            case ERR_NOT_OWNER: return '不是拥有者';
+            case ERR_NAME_EXISTS: return '名称已存在';
+            case ERR_BUSY: return 'Spawn忙碌中';
+            case ERR_NOT_ENOUGH_ENERGY: return '能量不足';
+            case ERR_INVALID_ARGS: return '无效参数';
+            case ERR_RCL_NOT_ENOUGH: return 'RCL等级不足';
+            default: return '未知错误(' + errorCode + ')';
+        }
     },
 
     // Poll all owned rooms and analyze their status
@@ -1396,6 +1580,7 @@ var runGeneralRoom = {
             console.log('// runGeneralRoom.help("poll")     - 房间轮询命令');
             console.log('// runGeneralRoom.help("roles")    - 角色配置命令');
             console.log('// runGeneralRoom.help("spawn")    - 生成数量管理命令');
+            console.log('// runGeneralRoom.help("system")   - 系统控制命令');
             console.log('// runGeneralRoom.help("all")      - 显示所有命令');
             console.log('');
             console.log('💡 使用方法: runGeneralRoom.help("分类名") 查看具体命令');
@@ -1432,6 +1617,10 @@ var runGeneralRoom = {
             case 'spawn':
             case 'sp':
                 this.showSpawnHelp();
+                break;
+            case 'system':
+            case 'sys':
+                this.showSystemHelp();
                 break;
             case 'all':
             case 'al':
@@ -1533,6 +1722,8 @@ var runGeneralRoom = {
         console.log('');
         this.showSpawnHelp();
         console.log('');
+        this.showSystemHelp();
+        console.log('');
         console.log('❓ 帮助命令:');
         console.log('// runGeneralRoom.help()           - 显示帮助菜单');
         console.log('// runGeneralRoom.h("分类")        - 快捷帮助');
@@ -1550,6 +1741,90 @@ var runGeneralRoom = {
     // help命令的简写别名
     h: function(category) {
         this.help(category);
+    },
+    
+    // Set log interval for run function
+    // 设置run函数的日志输出间隔
+    setLogInterval: function(interval) {
+        if (!interval || interval < 1) {
+            console.log('❌ 无效的间隔时间，必须大于0');
+            return false;
+        }
+        
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {};
+        }
+        
+        Memory.runGeneralRoomStatus.logInterval = interval;
+        console.log('✅ 日志输出间隔已设置为: ' + interval + ' tick');
+        return true;
+    },
+    
+    // Enable logging for run function
+    // 启用run函数的日志输出
+    enableLogging: function() {
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {};
+        }
+        
+        Memory.runGeneralRoomStatus.logInterval = 1; // 每tick都输出
+        Memory.runGeneralRoomStatus.lastLogTick = 0; // 重置计时器
+        console.log('✅ 已启用日志输出 (每tick输出)');
+        return true;
+    },
+    
+    // Disable logging for run function
+    // 禁用run函数的日志输出
+    disableLogging: function() {
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {};
+        }
+        
+        Memory.runGeneralRoomStatus.logInterval = Infinity; // 永不输出
+        console.log('✅ 已禁用日志输出');
+        return true;
+    },
+    
+    // Get system status
+    // 获取系统状态
+    getSystemStatus: function() {
+        if (!Memory.runGeneralRoomStatus) {
+            console.log('❌ 系统尚未初始化');
+            return null;
+        }
+        
+        var status = Memory.runGeneralRoomStatus;
+        var nextLogIn = status.logInterval - (Game.time - status.lastLogTick);
+        
+        console.log('🔧 runGeneralRoom系统状态:');
+        console.log('─'.repeat(40));
+        console.log('初始化状态: ' + (status.initialized ? '✅ 已初始化' : '❌ 未初始化'));
+        console.log('日志间隔: ' + status.logInterval + ' tick');
+        console.log('上次日志: tick ' + status.lastLogTick);
+        console.log('当前tick: tick ' + Game.time);
+        
+        if (status.logInterval === Infinity) {
+            console.log('下次日志: 已禁用');
+        } else if (nextLogIn <= 0) {
+            console.log('下次日志: 下个tick');
+        } else {
+            console.log('下次日志: ' + nextLogIn + ' tick后');
+        }
+        
+        // Display spawn statistics if available
+        // 显示生成统计信息（如果可用）
+        if (status.spawnAttempts !== undefined) {
+            console.log('');
+            console.log('🤖 生成统计:');
+            console.log('总尝试次数: ' + (status.spawnAttempts || 0));
+            console.log('总成功次数: ' + (status.successfulSpawns || 0));
+            var successRate = status.spawnAttempts > 0 ? 
+                Math.round((status.successfulSpawns / status.spawnAttempts) * 100) : 0;
+            console.log('成功率: ' + successRate + '%');
+        }
+        
+        console.log('─'.repeat(40));
+        return status;
     },
 
     // Show spawn quantity management help
@@ -1573,6 +1848,75 @@ var runGeneralRoom = {
         console.log('- 自动根据房间RCL等级选择对应的生成数量');
         console.log('- 支持按等级自定义调整各角色的生成数量');
         console.log('- 优先级顺序: harvester → harvester0 → harvester1 → carrier → carrierMineral → upgrader → builder');
+    },
+
+    // Reset spawn statistics
+    // 重置生成统计
+    resetSpawnStats: function() {
+        if (!Memory.runGeneralRoomStatus) {
+            Memory.runGeneralRoomStatus = {};
+        }
+        
+        Memory.runGeneralRoomStatus.spawnAttempts = 0;
+        Memory.runGeneralRoomStatus.successfulSpawns = 0;
+        
+        console.log('✅ 生成统计已重置');
+        return true;
+    },
+
+    // Manual spawn test for a specific room
+    // 手动测试特定房间的生成
+    testSpawn: function(roomName) {
+        if (!roomName) {
+            console.log('❌ 请指定房间名称');
+            console.log('💡 使用方法: runGeneralRoom.testSpawn("E39N8")');
+            return false;
+        }
+        
+        console.log('🧪 测试房间 ' + roomName + ' 的生成逻辑...');
+        console.log('─'.repeat(50));
+        
+        var result = this.processRoomSpawning(roomName, true);
+        
+        if (result) {
+            console.log('');
+            console.log('📊 测试结果:');
+            console.log('- 尝试次数: ' + result.attempts);
+            console.log('- 成功次数: ' + result.successes);
+            console.log('- 成功率: ' + (result.attempts > 0 ? Math.round((result.successes / result.attempts) * 100) : 0) + '%');
+        } else {
+            console.log('❌ 测试失败，无法处理房间生成');
+        }
+        
+        console.log('─'.repeat(50));
+        return result;
+    },
+
+    // Show system control commands help
+    // 显示系统控制命令帮助
+    showSystemHelp: function() {
+        console.log('🔧 runGeneralRoom - 系统控制命令');
+        console.log('─'.repeat(50));
+        console.log('// runGeneralRoom.run()                    - 手动运行一次系统');
+        console.log('// runGeneralRoom.testSpawn("E39N8")       - 测试特定房间的生成逻辑');
+        console.log('// runGeneralRoom.getSystemStatus()        - 查看系统状态');
+        console.log('// runGeneralRoom.resetSpawnStats()        - 重置生成统计');
+        console.log('// runGeneralRoom.setLogInterval(50)       - 设置日志输出间隔');
+        console.log('// runGeneralRoom.enableLogging()          - 启用详细日志');
+        console.log('// runGeneralRoom.disableLogging()         - 禁用日志输出');
+        console.log('');
+        console.log('💡 系统控制功能:');
+        console.log('- 自动爬虫生成：根据房间RCL等级和当前creep数量自动生成');
+        console.log('- 智能优先级：harvester → carrier → upgrader → builder');
+        console.log('- 自适应配置：根据实际Extension数量调整creep身体配置');
+        console.log('- 能量检查：确保有足够能量才尝试生成');
+        console.log('- 统计跟踪：记录生成尝试次数和成功率');
+        console.log('- 日志控制：可调节日志输出频率或完全禁用');
+        console.log('');
+        console.log('🚀 使用方法:');
+        console.log('1. 在main.js中调用 runGeneralRoom.run() 启用自动生成');
+        console.log('2. 使用 testSpawn() 测试特定房间的生成逻辑');
+        console.log('3. 使用 getSystemStatus() 监控系统运行状态');
     }
 };
 

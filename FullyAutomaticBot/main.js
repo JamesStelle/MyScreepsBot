@@ -12,6 +12,7 @@ function safeRequire(moduleName) {
 // Safe module loading with fallback
 // 中文: 带回退机制的安全模块加载
 var memoryCleaner = safeRequire('memoryCleaner');
+var memorySegmented = safeRequire('memorySegmented');
 var pixelGenerator = safeRequire('pixelGenerator');
 var runCreep = safeRequire('runCreep');
 //var runRoom = safeRequire('runRoom');
@@ -19,6 +20,10 @@ var runLink = safeRequire('runLink');
 var Tower = safeRequire('Tower');
 var PRTS = safeRequire('PRTS');
 var runGeneralRoom = safeRequire('runGeneralRoom');
+var runRoomPlannerVisual = safeRequire('runRoomPlannerVisual');
+
+// Planner模块因为文件较大，已移除自动加载
+// 如需使用，请在控制台手动执行: require('planner')
 
 module.exports.loop = function () {
     // Global error handler for the main loop
@@ -30,6 +35,15 @@ module.exports.loop = function () {
                 memoryCleaner.run();
             } catch (error) {
                 console.log('memoryCleaner error:', error.message);
+            }
+        }
+        
+        // Segmented memory management - 分段内存管理
+        if (memorySegmented && memorySegmented.run) {
+            try {
+                memorySegmented.run();
+            } catch (error) {
+                console.log('memorySegmented error:', error.message);
             }
         }
         
@@ -50,13 +64,23 @@ module.exports.loop = function () {
                 console.log('runCreep error:', error.message);
             }
         }
-        
+        /*
         // Room management - 房间管理
         if (runRoom && runRoom.run) {
             try {
                 runRoom.run();
             } catch (error) {
                 console.log('runRoom error:', error.message);
+            }
+        }
+
+        */
+        // General room management - 通用房间管理
+        if (runGeneralRoom && runGeneralRoom.run) {
+            try {
+                runGeneralRoom.run();
+            } catch (error) {
+                console.log('runGeneralRoom error:', error.message);
             }
         }
         
@@ -86,6 +110,19 @@ module.exports.loop = function () {
                 console.log('PRTS room stagnation monitoring error:', error.message);
             }
         }
+        
+        // Room planner visual - 房间规划可视化（仅在控制台手动调用）
+        // 使用方法: runRoomPlannerVisual.findExtensions("房间名")
+        // 不在主循环中自动执行，避免性能影响
+        
+        // 将runRoomPlannerVisual导出到全局作用域供控制台使用
+        if (runRoomPlannerVisual && !global.runRoomPlannerVisual) {
+            global.runRoomPlannerVisual = runRoomPlannerVisual;
+        }
+        
+        
+        // Planner Flag自动化已移除，避免CPU超时
+        // 如需使用planner，请在控制台手动执行：require('planner')
         
     } catch (globalError) {
         // Catch any unexpected errors in the main loop

@@ -12,7 +12,7 @@ function safeRequire(moduleName) {
 
 // Load room modules with error handling
 // 使用错误处理加载房间模块
-const roomE**N** = safeRequire('E**N**');
+const roomE39N8 = safeRequire('E39N8');
 
 // Room management mapping
 // 房间管理映射

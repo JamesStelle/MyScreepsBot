@@ -1,67 +1,149 @@
-/**
- * Attacker 角色使用指南 / Attacker Role Usage Guide
+/*
+ * ========================================
+ * ATTACKER 角色使用教程
+ * ========================================
  * 
- * 功能概述 / Overview:
- * Attacker 是一个专门用于攻击敌方房间和建筑的军事角色
- * Attacker is a specialized military role for attacking enemy rooms and structures
+ * Attacker是智能攻击角色，支持跨房间作战、智能寻路和目标优先级攻击。
+ * 配合Healer角色可以形成强大的双人攻击小队。
  * 
- * 使用步骤 / Usage Steps:
+ * 📋 主要功能:
+ * - 跨房间智能寻路 (高速公路优先)
+ * - 目标房间动态配置 (通过Memory存储)
+ * - 攻击优先级系统 (塔楼→孵化器→其他建筑)
+ * - 自动障碍物清理 (墙壁和城墙)
+ * - 状态机管理 (移动→攻击→巡逻)
  * 
- * 1. 创建 Attacker 爬虫 / Create Attacker Creep:
- *    推荐配置 / Recommended configuration:
- *    Game.spawns['你的Spawn名称'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], '攻击者名称', {memory:{role:'attacker'}});
- *    或更强配置 / Or stronger configuration:
- *    Game.spawns['你的Spawn名称'].spawnCreep([TOUGH,TOUGH,ATTACK,ATTACK,ATTACK,MOVE,MOVE,MOVE], '攻击者名称', {memory:{role:'attacker'}});
+ * 🚀 快速开始:
  * 
- * 2. 配置目标房间 / Configure Target Room:
- *    在代码中修改 targetRoom 变量，或通过内存设置：
- *    Modify targetRoom variable in code, or set via memory:
- *    Game.creeps['攻击者名称'].memory.targetRoom = 'E45N9';
+ * 1. 设置攻击目标:
+ *    roleAttacker.setTargetRoom("E45N9")  // 设置目标房间
  * 
- * 攻击优先级 / Attack Priority:
- * 1. 塔楼 (Towers) - 🎯 tower - 最高威胁，优先摧毁 / Highest threat, destroy first
- * 2. 孵化器 (Spawns) - 🎯 spawn - 阻止敌方生产爬虫 / Prevent enemy creep production
- * 3. 其他敌对建筑 - 🎯 struct - 清理剩余建筑 / Clean up remaining structures
+ * 2. 生成攻击者:
+ *    Game.spawns['Spawn1'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], 'attacker1', {memory: {role: 'attacker'}})
  * 
- * 工作状态说明 / Status Indicators:
- * 🚀 moving - 正在前往目标房间 / Moving to target room
- * 🎯 tower - 正在攻击塔楼 / Attacking towers
- * 🎯 spawn - 正在攻击孵化器 / Attacking spawns
- * 🎯 struct - 正在攻击其他建筑 / Attacking other structures
- * 💥 wall - 正在清除障碍物 / Clearing obstacles
- * 👁️ patrol - 巡逻模式，寻找新目标 / Patrol mode, looking for new targets
+ * 3. 可选：生成治疗者组成双人小队:
+ *    Game.spawns['Spawn1'].spawnCreep([HEAL,HEAL,MOVE,MOVE], 'healer1', {memory: {role: 'healer'}})
  * 
- * 智能特性 / Smart Features:
- * - 自动路径规划，优先使用高速公路房间 / Auto pathfinding, prefers highway rooms
- * - 路径缓存，提高移动效率 / Path caching for improved movement efficiency
- * - 障碍物清除，自动破坏阻挡的墙壁和城墙 / Obstacle clearing, auto-destroy blocking walls
- * - 巡逻模式，在清理完毕后继续监视 / Patrol mode, continues monitoring after clearing
+ * 4. 攻击者会自动:
+ *    - 移动到目标房间
+ *    - 按优先级攻击敌方建筑
+ *    - 清理路径上的障碍物
+ *    - 完成后进入巡逻模式
  * 
- * 使用示例 / Usage Examples:
+ * 💻 控制台命令:
  * 
- * 示例1：基础攻击者 / Example 1: Basic attacker
- * Game.spawns['Spawn1'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], 'attacker1', {memory:{role:'attacker'}});
+ * // 目标房间管理
+ * roleAttacker.setTargetRoom("E45N9")     // 设置目标房间
+ * roleAttacker.clearTargetRoom()          // 清除目标房间
  * 
- * 示例2：重装攻击者 / Example 2: Heavy attacker
- * Game.spawns['Spawn1'].spawnCreep([TOUGH,TOUGH,ATTACK,ATTACK,ATTACK,MOVE,MOVE,MOVE], 'heavy_attacker', {memory:{role:'attacker'}});
+ * // 攻击模式设置
+ * roleAttacker.setAttackMode("destroy")   // 摧毁模式 (默认)
+ * roleAttacker.setAttackMode("raid")      // 突袭模式
+ * roleAttacker.setAttackMode("scout")     // 侦察模式
  * 
- * 示例3：设置特定目标房间 / Example 3: Set specific target room
- * Game.creeps['attacker1'].memory.targetRoom = 'W1N1';
+ * // 状态查看
+ * roleAttacker.showStatus()               // 显示所有攻击者状态
  * 
- * 注意事项 / Important Notes:
- * - 确保有足够的能量生产攻击者 / Ensure sufficient energy production for attackers
- * - 考虑敌方防御，可能需要多个攻击者 / Consider enemy defenses, may need multiple attackers
- * - 攻击者会自动寻路，但复杂地形可能需要手动引导 / Auto-pathfinding, but complex terrain may need manual guidance
- * - 修改 targetRoom 变量来改变攻击目标 / Modify targetRoom variable to change attack target
+ * 🎯 攻击优先级:
+ * 
+ * 1. 路径障碍物 - 阻挡移动的墙壁和城墙 (最高优先级)
+ * 2. 塔楼 (STRUCTURE_TOWER) - 主要威胁目标
+ * 3. 孵化器 (STRUCTURE_SPAWN) - 生产设施
+ * 4. 其他敌对建筑 - 次要目标
+ * 
+ * 🗺️ 智能寻路:
+ * 
+ * - 高速公路房间 (坐标%10=0) - 优先级1
+ * - 过道房间 (无控制器) - 优先级2  
+ * - 中性房间 (有控制器无主人) - 优先级3
+ * - 其他房间 - 优先级10
+ * 
+ * 📊 状态显示:
+ * - 🚀 moving: 正在移动到目标房间
+ * - 🎯 tower: 正在攻击塔楼
+ * - 🎯 spawn: 正在攻击孵化器
+ * - 🎯 struct: 正在攻击其他建筑
+ * - 💥 wall: 正在清理障碍物
+ * - 👁️ patrol: 巡逻模式 (无目标时)
+ * 
+ * 🔧 高级配置:
+ * 
+ * // 批量生成攻击小队
+ * for(let i = 1; i <= 3; i++) {
+ *     Game.spawns['Spawn1'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], `attacker${i}`, {memory: {role: 'attacker'}})
+ *     Game.spawns['Spawn1'].spawnCreep([HEAL,HEAL,MOVE,MOVE], `healer${i}`, {memory: {role: 'healer'}})
+ * }
+ * 
+ * // 设置不同攻击模式
+ * roleAttacker.setAttackMode("raid")      // 突袭：快进快出
+ * roleAttacker.setAttackMode("destroy")   // 摧毁：彻底破坏
+ * roleAttacker.setAttackMode("scout")     // 侦察：收集情报
+ * 
+ * // 动态目标切换
+ * roleAttacker.setTargetRoom("E45N9")     // 攻击房间1
+ * // 等待攻击完成...
+ * roleAttacker.setTargetRoom("W10S20")    // 切换到房间2
+ * 
+ * 🤝 双人小队配合:
+ * 
+ * Attacker + Healer 组成紧密编队:
+ * - Healer自动寻找并跟随Attacker
+ * - 保持1格距离的战术编队
+ * - Healer优先治疗Attacker
+ * - 支持白名单盟友治疗
+ * 
+ * 编队示例:
+ * ```
+ * H . .    . H .    . . H
+ * . A .    . A .    . A .
+ * . . .    . . .    . . .
+ * ```
+ * A=Attacker, H=Healer
+ * 
+ * 💡 战术技巧:
+ * 
+ * 1. 路径规划: 系统自动选择最安全的路径
+ * 2. 障碍清理: 遇到墙壁会自动攻击，无需手动操作
+ * 3. 目标切换: 可以随时更改目标房间，所有攻击者会自动更新
+ * 4. 编队作战: Healer会自动跟随，形成高效战斗单位
+ * 5. 持续作战: 攻击完成后会巡逻，等待新目标
+ * 
+ * ⚠️ 注意事项:
+ * 
+ * - 确保攻击者有足够的ATTACK部件
+ * - 跨房间移动需要时间，请耐心等待
+ * - 敌方防御可能很强，建议多个攻击者协同
+ * - 设置目标前确认房间名称格式正确 (如E45N9)
+ * - 攻击者会攻击所有敌对建筑，包括中性玩家的建筑
+ * 
+ * 🔗 相关系统:
+ * - role.healer: 治疗者支援系统
+ * - config.whitelist: 友方玩家白名单
+ * - Memory.attackerConfig: 攻击配置存储
+ * - runGeneralRoom: 自动爬虫生成
+ * 
+ * 📈 性能优化:
+ * - 路径缓存: 减少重复计算
+ * - 智能寻路: 避开危险区域
+ * - 状态机: 高效的行为管理
+ * - 内存管理: 自动清理无效数据
+ * 
+ * ========================================
  */
 
 var roleAttacker = {
 
     /** @param {Creep} creep **/
     run: function(creep) {
-        // Target room configuration
-        // 目标房间配置
-        const targetRoom = 'E45N9';
+        // Get target room from global memory configuration
+        // 从全局内存配置获取目标房间
+        const targetRoom = this.getTargetRoom();
+        
+        if (!targetRoom) {
+            creep.say('❌ no target');
+            console.log(`Attacker ${creep.name}: 没有设置目标房间，使用控制台命令: roleAttacker.setTargetRoom("房间名")`);
+            return;
+        }
         
         // Initialize memory if not exists
         // 初始化内存（如果不存在）
@@ -75,6 +157,15 @@ var roleAttacker = {
             creep.memory.state = 'moving';
         }
 
+        // Update target room if changed in global config
+        // 如果全局配置中的目标房间发生变化，则更新
+        if (creep.memory.targetRoom !== targetRoom) {
+            creep.memory.targetRoom = targetRoom;
+            creep.memory.pathToTarget = []; // Clear cached path
+            creep.memory.state = 'moving'; // Reset to moving state
+            console.log(`Attacker ${creep.name}: 目标房间已更新为 ${targetRoom}`);
+        }
+
         // State machine for attacker behavior
         // 攻击者行为状态机
         switch(creep.memory.state) {
@@ -84,9 +175,6 @@ var roleAttacker = {
             case 'attacking':
                 this.attackInRoom(creep);
                 break;
-            case 'clearing_obstacles':
-                this.clearObstacles(creep);
-                break;
             case 'patrolling':
                 this.patrolRoom(creep);
                 break;
@@ -94,6 +182,165 @@ var roleAttacker = {
                 creep.memory.state = 'moving';
                 break;
         }
+    },
+
+    /**
+     * Get target room from Memory configuration
+     * 从Memory配置获取目标房间
+     */
+    getTargetRoom: function() {
+        // Initialize attacker config if not exists
+        // 如果不存在则初始化攻击者配置
+        if (!Memory.attackerConfig) {
+            Memory.attackerConfig = {
+                targetRoom: null,
+                lastUpdated: null,
+                attackMode: 'destroy' // 'destroy', 'raid', 'scout'
+            };
+        }
+        
+        return Memory.attackerConfig.targetRoom;
+    },
+
+    /**
+     * Console command: Set target room for all attackers
+     * 控制台命令：为所有攻击者设置目标房间
+     */
+    setTargetRoom: function(roomName) {
+        if (!roomName || typeof roomName !== 'string') {
+            console.log('❌ 无效的房间名称。使用方法: roleAttacker.setTargetRoom("E45N9")');
+            return false;
+        }
+        
+        // Validate room name format
+        // 验证房间名称格式
+        const roomNamePattern = /^[WE]\d+[NS]\d+$/;
+        if (!roomNamePattern.test(roomName)) {
+            console.log('❌ 房间名称格式无效。正确格式: E45N9, W12S34 等');
+            return false;
+        }
+        
+        // Initialize config if not exists
+        // 如果不存在则初始化配置
+        if (!Memory.attackerConfig) {
+            Memory.attackerConfig = {};
+        }
+        
+        // Update target room
+        // 更新目标房间
+        Memory.attackerConfig.targetRoom = roomName;
+        Memory.attackerConfig.lastUpdated = Game.time;
+        
+        console.log(`✅ 攻击者目标房间已设置为: ${roomName}`);
+        console.log(`📊 配置时间: tick ${Game.time}`);
+        
+        // Update all existing attacker creeps
+        // 更新所有现有的攻击者爬虫
+        const attackers = _.filter(Game.creeps, (creep) => creep.memory.role === 'attacker');
+        if (attackers.length > 0) {
+            console.log(`🔄 正在更新 ${attackers.length} 个攻击者的目标...`);
+            for (let attacker of attackers) {
+                attacker.memory.targetRoom = roomName;
+                attacker.memory.pathToTarget = []; // Clear cached path
+                attacker.memory.state = 'moving'; // Reset to moving state
+            }
+            console.log('✅ 所有攻击者目标已更新');
+        }
+        
+        return true;
+    },
+
+    /**
+     * Console command: Clear target room
+     * 控制台命令：清除目标房间
+     */
+    clearTargetRoom: function() {
+        if (!Memory.attackerConfig) {
+            console.log('❌ 没有找到攻击者配置');
+            return false;
+        }
+        
+        Memory.attackerConfig.targetRoom = null;
+        Memory.attackerConfig.lastUpdated = Game.time;
+        
+        console.log('✅ 攻击者目标房间已清除');
+        
+        // Update all existing attacker creeps
+        // 更新所有现有的攻击者爬虫
+        const attackers = _.filter(Game.creeps, (creep) => creep.memory.role === 'attacker');
+        for (let attacker of attackers) {
+            attacker.memory.targetRoom = null;
+            attacker.memory.state = 'moving';
+        }
+        
+        return true;
+    },
+
+    /**
+     * Console command: Set attack mode
+     * 控制台命令：设置攻击模式
+     */
+    setAttackMode: function(mode) {
+        const validModes = ['destroy', 'raid', 'scout'];
+        if (!validModes.includes(mode)) {
+            console.log(`❌ 无效的攻击模式。可用模式: ${validModes.join(', ')}`);
+            return false;
+        }
+        
+        if (!Memory.attackerConfig) {
+            Memory.attackerConfig = {};
+        }
+        
+        Memory.attackerConfig.attackMode = mode;
+        Memory.attackerConfig.lastUpdated = Game.time;
+        
+        console.log(`✅ 攻击模式已设置为: ${mode}`);
+        return true;
+    },
+
+    /**
+     * Console command: Show attacker configuration and status
+     * 控制台命令：显示攻击者配置和状态
+     */
+    showStatus: function() {
+        console.log('⚔️ 攻击者系统状态:');
+        console.log('═'.repeat(50));
+        
+        if (!Memory.attackerConfig) {
+            console.log('❌ 没有找到攻击者配置');
+            console.log('💡 使用 roleAttacker.setTargetRoom("房间名") 设置目标');
+            return;
+        }
+        
+        const config = Memory.attackerConfig;
+        console.log(`目标房间: ${config.targetRoom || '未设置'}`);
+        console.log(`攻击模式: ${config.attackMode || 'destroy'}`);
+        console.log(`最后更新: tick ${config.lastUpdated || '未知'}`);
+        console.log('');
+        
+        // Show all attacker creeps status
+        // 显示所有攻击者爬虫状态
+        const attackers = _.filter(Game.creeps, (creep) => creep.memory.role === 'attacker');
+        
+        if (attackers.length === 0) {
+            console.log('❌ 没有找到攻击者爬虫');
+        } else {
+            console.log(`🤖 攻击者爬虫 (${attackers.length}个):`);
+            for (let attacker of attackers) {
+                const state = attacker.memory.state || 'unknown';
+                const target = attacker.memory.targetRoom || '未设置';
+                const room = attacker.room.name;
+                console.log(`${attacker.name}: ${state} | 当前房间: ${room} | 目标: ${target}`);
+            }
+        }
+        
+        console.log('');
+        console.log('💡 可用命令:');
+        console.log('roleAttacker.setTargetRoom("E45N9")  - 设置目标房间');
+        console.log('roleAttacker.clearTargetRoom()       - 清除目标房间');
+        console.log('roleAttacker.setAttackMode("raid")   - 设置攻击模式');
+        console.log('roleAttacker.showStatus()            - 显示状态');
+        console.log('═'.repeat(50));
     },
 
     /**
@@ -197,20 +444,6 @@ var roleAttacker = {
      * 在目标房间时的攻击逻辑
      */
     attackInRoom: function(creep) {
-        // Check for obstacles in path first
-        // 首先检查路径上的障碍物
-        const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-            filter: (structure) => {
-                return structure.structureType === STRUCTURE_WALL ||
-                       structure.structureType === STRUCTURE_RAMPART;
-            }
-        });
-        
-        if (obstacles.length > 0) {
-            creep.memory.state = 'clearing_obstacles';
-            return;
-        }
-        
         // Priority 1: Attack towers
         // 优先级1：攻击塔楼
         const towers = creep.room.find(FIND_HOSTILE_STRUCTURES, {
@@ -220,6 +453,28 @@ var roleAttacker = {
         if (towers.length > 0) {
             creep.say('🎯 tower');
             const target = creep.pos.findClosestByRange(towers);
+            
+            // Check for obstacles in path to tower
+            // 检查到塔楼路径上的障碍物
+            const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+                filter: (structure) => {
+                    return (structure.structureType === STRUCTURE_WALL ||
+                           structure.structureType === STRUCTURE_RAMPART) &&
+                           !structure.my; // Don't attack own ramparts
+                }
+            });
+            
+            if (obstacles.length > 0) {
+                // Attack obstacle blocking the path
+                // 攻击阻挡路径的障碍物
+                const obstacle = creep.pos.findClosestByRange(obstacles);
+                creep.say('💥 wall');
+                creep.attack(obstacle);
+                return;
+            }
+            
+            // Move to tower if no obstacles
+            // 如果没有障碍物则移动到塔楼
             if (creep.attack(target) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {
                     visualizePathStyle: {stroke: '#ff0000'},
@@ -238,6 +493,28 @@ var roleAttacker = {
         if (spawns.length > 0) {
             creep.say('🎯 spawn');
             const target = creep.pos.findClosestByRange(spawns);
+            
+            // Check for obstacles in path to spawn
+            // 检查到孵化器路径上的障碍物
+            const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+                filter: (structure) => {
+                    return (structure.structureType === STRUCTURE_WALL ||
+                           structure.structureType === STRUCTURE_RAMPART) &&
+                           !structure.my; // Don't attack own ramparts
+                }
+            });
+            
+            if (obstacles.length > 0) {
+                // Attack obstacle blocking the path
+                // 攻击阻挡路径的障碍物
+                const obstacle = creep.pos.findClosestByRange(obstacles);
+                creep.say('💥 wall');
+                creep.attack(obstacle);
+                return;
+            }
+            
+            // Move to spawn if no obstacles
+            // 如果没有障碍物则移动到孵化器
             if (creep.attack(target) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {
                     visualizePathStyle: {stroke: '#ff0000'},
@@ -253,6 +530,28 @@ var roleAttacker = {
         if (hostileStructures.length > 0) {
             creep.say('🎯 struct');
             const target = creep.pos.findClosestByRange(hostileStructures);
+            
+            // Check for obstacles in path to target
+            // 检查到目标路径上的障碍物
+            const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+                filter: (structure) => {
+                    return (structure.structureType === STRUCTURE_WALL ||
+                           structure.structureType === STRUCTURE_RAMPART) &&
+                           !structure.my; // Don't attack own ramparts
+                }
+            });
+            
+            if (obstacles.length > 0) {
+                // Attack obstacle blocking the path
+                // 攻击阻挡路径的障碍物
+                const obstacle = creep.pos.findClosestByRange(obstacles);
+                creep.say('💥 wall');
+                creep.attack(obstacle);
+                return;
+            }
+            
+            // Move to target if no obstacles
+            // 如果没有障碍物则移动到目标
             if (creep.attack(target) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {
                     visualizePathStyle: {stroke: '#ff0000'},
@@ -265,31 +564,6 @@ var roleAttacker = {
         // No targets found, switch to patrol mode
         // 没有找到目标，切换到巡逻模式
         creep.memory.state = 'patrolling';
-    },
-
-    /**
-     * Clear obstacles in the path
-     * 清除路径上的障碍物
-     */
-    clearObstacles: function(creep) {
-        const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-            filter: (structure) => {
-                return structure.structureType === STRUCTURE_WALL ||
-                       structure.structureType === STRUCTURE_RAMPART;
-            }
-        });
-        
-        if (obstacles.length > 0) {
-            // Attack the closest obstacle
-            // 攻击最近的障碍物
-            const obstacle = creep.pos.findClosestByRange(obstacles);
-            creep.say('💥 wall');
-            creep.attack(obstacle);
-        } else {
-            // No more obstacles, return to attacking
-            // 没有更多障碍物，返回攻击状态
-            creep.memory.state = 'attacking';
-        }
     },
 
     /**
@@ -324,5 +598,9 @@ var roleAttacker = {
         creep.moveTo(patrolPos);
     }
 };
+
+// Set as global variable for console access
+// 设置为全局变量以便控制台访问
+global.roleAttacker = roleAttacker;
 
 module.exports = roleAttacker;
