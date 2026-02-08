@@ -32,14 +32,9 @@
  * 
  * 💻 控制台命令:
  * 
- * // 目标房间管理
+ * // 攻击模式设置
  * roleAttacker.setTargetRoom("E45N9")     // 设置目标房间
  * roleAttacker.clearTargetRoom()          // 清除目标房间
- * 
- * // 攻击模式设置
- * roleAttacker.setAttackMode("destroy")   // 摧毁模式 (默认)
- * roleAttacker.setAttackMode("raid")      // 突袭模式
- * roleAttacker.setAttackMode("scout")     // 侦察模式
  * 
  * // 状态查看
  * roleAttacker.showStatus()               // 显示所有攻击者状态
@@ -68,16 +63,10 @@
  * 
  * 🔧 高级配置:
  * 
- * // 批量生成攻击小队
  * for(let i = 1; i <= 3; i++) {
  *     Game.spawns['Spawn1'].spawnCreep([ATTACK,ATTACK,MOVE,MOVE], `attacker${i}`, {memory: {role: 'attacker'}})
  *     Game.spawns['Spawn1'].spawnCreep([HEAL,HEAL,MOVE,MOVE], `healer${i}`, {memory: {role: 'healer'}})
  * }
- * 
- * // 设置不同攻击模式
- * roleAttacker.setAttackMode("raid")      // 突袭：快进快出
- * roleAttacker.setAttackMode("destroy")   // 摧毁：彻底破坏
- * roleAttacker.setAttackMode("scout")     // 侦察：收集情报
  * 
  * // 动态目标切换
  * roleAttacker.setTargetRoom("E45N9")     // 攻击房间1
@@ -194,8 +183,7 @@ var roleAttacker = {
         if (!Memory.attackerConfig) {
             Memory.attackerConfig = {
                 targetRoom: null,
-                lastUpdated: null,
-                attackMode: 'destroy' // 'destroy', 'raid', 'scout'
+                lastUpdated: null
             };
         }
         
@@ -277,28 +265,6 @@ var roleAttacker = {
     },
 
     /**
-     * Console command: Set attack mode
-     * 控制台命令：设置攻击模式
-     */
-    setAttackMode: function(mode) {
-        const validModes = ['destroy', 'raid', 'scout'];
-        if (!validModes.includes(mode)) {
-            console.log(`❌ 无效的攻击模式。可用模式: ${validModes.join(', ')}`);
-            return false;
-        }
-        
-        if (!Memory.attackerConfig) {
-            Memory.attackerConfig = {};
-        }
-        
-        Memory.attackerConfig.attackMode = mode;
-        Memory.attackerConfig.lastUpdated = Game.time;
-        
-        console.log(`✅ 攻击模式已设置为: ${mode}`);
-        return true;
-    },
-
-    /**
      * Console command: Show attacker configuration and status
      * 控制台命令：显示攻击者配置和状态
      */
@@ -314,7 +280,6 @@ var roleAttacker = {
         
         const config = Memory.attackerConfig;
         console.log(`目标房间: ${config.targetRoom || '未设置'}`);
-        console.log(`攻击模式: ${config.attackMode || 'destroy'}`);
         console.log(`最后更新: tick ${config.lastUpdated || '未知'}`);
         console.log('');
         
@@ -338,7 +303,6 @@ var roleAttacker = {
         console.log('💡 可用命令:');
         console.log('roleAttacker.setTargetRoom("E45N9")  - 设置目标房间');
         console.log('roleAttacker.clearTargetRoom()       - 清除目标房间');
-        console.log('roleAttacker.setAttackMode("raid")   - 设置攻击模式');
         console.log('roleAttacker.showStatus()            - 显示状态');
         console.log('═'.repeat(50));
     },
@@ -348,14 +312,20 @@ var roleAttacker = {
      * 移动到目标房间，使用智能寻路
      */
     moveToTargetRoom: function(creep, targetRoom) {
-        creep.say('🚀 moving');
-        
         // Check if we've reached the target room
         // 检查是否已到达目标房间
         if (creep.room.name === targetRoom) {
             creep.memory.state = 'attacking';
+            // Clear path cache when reaching target room
+            // 到达目标房间时清除路径缓存
+            creep.memory.pathToTarget = [];
+            // Immediately call attack logic in the same tick
+            // 在同一tick立即调用攻击逻辑
+            this.attackInRoom(creep);
             return;
         }
+        
+        creep.say('🚀 moving');
         
         // Use cached path if available and valid
         // 如果有缓存路径且有效，则使用缓存路径
@@ -415,7 +385,9 @@ var roleAttacker = {
             const exitDir = route[0].exit;
             const exit = creep.room.findExitTo(nextRoom);
             
-            if (exit) {
+            // Check if exit is valid (not an error code)
+            // 检查出口是否有效（不是错误代码）
+            if (exit !== ERR_NO_PATH && exit !== ERR_INVALID_ARGS && Array.isArray(exit) && exit.length > 0) {
                 const path = creep.room.findPath(creep.pos, exit[0], {
                     ignoreCreeps: true,
                     maxOps: 1000
@@ -431,6 +403,10 @@ var roleAttacker = {
                     // 回退到简单的moveTo
                     creep.moveTo(new RoomPosition(25, 25, nextRoom));
                 }
+            } else {
+                // Exit not found, use direct movement
+                // 找不到出口，使用直接移动
+                creep.moveTo(new RoomPosition(25, 25, nextRoom));
             }
         } else {
             // Direct movement if no route found
@@ -452,29 +428,20 @@ var roleAttacker = {
         
         if (towers.length > 0) {
             creep.say('🎯 tower');
-            const target = creep.pos.findClosestByRange(towers);
+            const target = creep.pos.findClosestByPath(towers, {ignoreDestructibleStructures: false});
             
-            // Check for obstacles in path to tower
-            // 检查到塔楼路径上的障碍物
-            const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-                filter: (structure) => {
-                    return (structure.structureType === STRUCTURE_WALL ||
-                           structure.structureType === STRUCTURE_RAMPART) &&
-                           !structure.my; // Don't attack own ramparts
+            if (!target) {
+                // No path found, try to attack blocking walls
+                // 找不到路径，尝试攻击阻挡的墙壁
+                const closestTower = creep.pos.findClosestByRange(towers);
+                if (closestTower) {
+                    this.attackBlockingWall(creep, closestTower);
                 }
-            });
-            
-            if (obstacles.length > 0) {
-                // Attack obstacle blocking the path
-                // 攻击阻挡路径的障碍物
-                const obstacle = creep.pos.findClosestByRange(obstacles);
-                creep.say('💥 wall');
-                creep.attack(obstacle);
                 return;
             }
             
-            // Move to tower if no obstacles
-            // 如果没有障碍物则移动到塔楼
+            // Move to tower and attack
+            // 移动到塔楼并攻击
             if (creep.attack(target) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {
                     visualizePathStyle: {stroke: '#ff0000'},
@@ -492,29 +459,20 @@ var roleAttacker = {
         
         if (spawns.length > 0) {
             creep.say('🎯 spawn');
-            const target = creep.pos.findClosestByRange(spawns);
+            const target = creep.pos.findClosestByPath(spawns, {ignoreDestructibleStructures: false});
             
-            // Check for obstacles in path to spawn
-            // 检查到孵化器路径上的障碍物
-            const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-                filter: (structure) => {
-                    return (structure.structureType === STRUCTURE_WALL ||
-                           structure.structureType === STRUCTURE_RAMPART) &&
-                           !structure.my; // Don't attack own ramparts
+            if (!target) {
+                // No path found, try to attack blocking walls
+                // 找不到路径，尝试攻击阻挡的墙壁
+                const closestSpawn = creep.pos.findClosestByRange(spawns);
+                if (closestSpawn) {
+                    this.attackBlockingWall(creep, closestSpawn);
                 }
-            });
-            
-            if (obstacles.length > 0) {
-                // Attack obstacle blocking the path
-                // 攻击阻挡路径的障碍物
-                const obstacle = creep.pos.findClosestByRange(obstacles);
-                creep.say('💥 wall');
-                creep.attack(obstacle);
                 return;
             }
             
-            // Move to spawn if no obstacles
-            // 如果没有障碍物则移动到孵化器
+            // Move to spawn and attack
+            // 移动到孵化器并攻击
             if (creep.attack(target) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {
                     visualizePathStyle: {stroke: '#ff0000'},
@@ -529,29 +487,20 @@ var roleAttacker = {
         const hostileStructures = creep.room.find(FIND_HOSTILE_STRUCTURES);
         if (hostileStructures.length > 0) {
             creep.say('🎯 struct');
-            const target = creep.pos.findClosestByRange(hostileStructures);
+            const target = creep.pos.findClosestByPath(hostileStructures, {ignoreDestructibleStructures: false});
             
-            // Check for obstacles in path to target
-            // 检查到目标路径上的障碍物
-            const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
-                filter: (structure) => {
-                    return (structure.structureType === STRUCTURE_WALL ||
-                           structure.structureType === STRUCTURE_RAMPART) &&
-                           !structure.my; // Don't attack own ramparts
+            if (!target) {
+                // No path found, try to attack blocking walls
+                // 找不到路径，尝试攻击阻挡的墙壁
+                const closestStructure = creep.pos.findClosestByRange(hostileStructures);
+                if (closestStructure) {
+                    this.attackBlockingWall(creep, closestStructure);
                 }
-            });
-            
-            if (obstacles.length > 0) {
-                // Attack obstacle blocking the path
-                // 攻击阻挡路径的障碍物
-                const obstacle = creep.pos.findClosestByRange(obstacles);
-                creep.say('💥 wall');
-                creep.attack(obstacle);
                 return;
             }
             
-            // Move to target if no obstacles
-            // 如果没有障碍物则移动到目标
+            // Move to target and attack
+            // 移动到目标并攻击
             if (creep.attack(target) === ERR_NOT_IN_RANGE) {
                 creep.moveTo(target, {
                     visualizePathStyle: {stroke: '#ff0000'},
@@ -561,9 +510,45 @@ var roleAttacker = {
             return;
         }
         
-        // No targets found, switch to patrol mode
-        // 没有找到目标，切换到巡逻模式
+        // No hostile structures found, log and switch to patrol mode
+        // 没有找到敌对建筑，记录日志并切换到巡逻模式
+        console.log(`Attacker ${creep.name}: 目标房间 ${creep.room.name} 中没有敌对建筑`);
         creep.memory.state = 'patrolling';
+        // Immediately call patrol logic in the same tick
+        // 在同一tick立即调用巡逻逻辑
+        this.patrolRoom(creep);
+    },
+
+    /**
+     * Attack blocking wall when no path is available
+     * 当没有可用路径时攻击阻挡的墙壁
+     */
+    attackBlockingWall: function(creep, target) {
+        // Find walls and ramparts in range
+        // 查找范围内的墙壁和城墙
+        const obstacles = creep.pos.findInRange(FIND_STRUCTURES, 1, {
+            filter: (structure) => {
+                return (structure.structureType === STRUCTURE_WALL ||
+                       structure.structureType === STRUCTURE_RAMPART) &&
+                       !structure.my;
+            }
+        });
+        
+        if (obstacles.length > 0) {
+            // Attack the closest obstacle
+            // 攻击最近的障碍物
+            const obstacle = creep.pos.findClosestByRange(obstacles);
+            creep.say('💥 wall');
+            creep.attack(obstacle);
+        } else {
+            // No obstacles nearby, try to move closer to target
+            // 附近没有障碍物，尝试靠近目标
+            creep.moveTo(target, {
+                visualizePathStyle: {stroke: '#ff0000'},
+                reusePath: 5,
+                ignoreDestructibleStructures: false
+            });
+        }
     },
 
     /**

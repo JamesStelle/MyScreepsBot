@@ -138,16 +138,13 @@ var roleDefender = {
             return;
         }
 
-        // Attack the hostile creep
         // 攻击敌对爬虫
         creep.say('⚔️ fight');
-        
-        // Prioritize ranged attack if available
-        // 如果可用，优先使用远程攻击
-        if (creep.rangedAttack(target) === ERR_NOT_IN_RANGE) {
-            if (creep.attack(target) === ERR_NOT_IN_RANGE) {
-                creep.moveTo(target, {visualizePathStyle: {stroke: '#ff0000'}});
-            }
+        const rangedResult = creep.rangedAttack(target);
+        const meleeResult = creep.attack(target);
+        if ((rangedResult === ERR_NOT_IN_RANGE || rangedResult === ERR_NO_BODYPART) &&
+            (meleeResult === ERR_NOT_IN_RANGE || meleeResult === ERR_NO_BODYPART)) {
+            creep.moveTo(target, {visualizePathStyle: {stroke: '#ff0000'}});
         }
     }
 

@@ -3,13 +3,14 @@ module.exports = {
     // 中文: 集中式角色配置 - 单一数据源
     getRoleBodyConfigurations: function() {
         return {
-            harvester: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 100*8+50+50*8=1250
-            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1250
-            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1250
-            carrier: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], // 1000
+            harvester: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 
+            carrier: [MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY,CARRY],
             carrierMineral: [CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY,CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 
-            upgrader: [MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,WORK,CARRY,CARRY], // 1450
-            builder: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE] // 1300
+            upgrader: [MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,MOVE,WORK,WORK,WORK,WORK,WORK,WORK,CARRY,CARRY], 
+            builder: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE], 
+            reserver:[CLAIM,CLAIM,MOVE,MOVE]
         };
     },
 
@@ -21,9 +22,10 @@ module.exports = {
             harvester0: 1,
             harvester1: 1,
             carrier: 2,
-            carrierMineral: 1,
+            carrierMineral: 0,
             upgrader: 1,
-            builder: 0,
+            builder: 1,
+            reserver:1
         };
     },
 
@@ -37,7 +39,8 @@ module.exports = {
             carrier: _.filter(Game.creeps, c => c.memory.role === 'carrier' && c.room.name === 'E39N8').length,
             carrierMineral: _.filter(Game.creeps, c => c.memory.role === 'carrierMineral' && c.room.name === 'E39N8').length,
             upgrader: _.filter(Game.creeps, c => c.memory.role === 'upgrader' && c.room.name === 'E39N8').length,
-            builder: _.filter(Game.creeps, c => c.memory.role === 'builder' && c.room.name === 'E39N8').length
+            builder: _.filter(Game.creeps, c => c.memory.role === 'builder' && c.room.name === 'E39N8').length,
+            reserver: _.filter(Game.creeps, c => c.memory.role === 'reserver' ).length,
         };
         
         // Log current creep counts (ordered by spawn priority)
@@ -78,7 +81,7 @@ module.exports = {
         
         // Prioritize spawning based on role shortages (ordered by priority)
         // 中文: 根据角色短缺优先生成（按优先级排序）
-        const rolesPriority = ['harvester', 'harvester0', 'harvester1', 'carrier', 'carrierMineral', 'upgrader', 'builder'];
+        const rolesPriority = ['harvester', 'harvester0', 'harvester1', 'carrier', 'carrierMineral', 'upgrader', 'builder','reserver'];
         
         for (const role of rolesPriority) {
             if (creepCount[role] < minCreeps[role]) {
@@ -110,7 +113,18 @@ module.exports = {
     spawnCreep(spawn, role, body) {
         const newName = `E39N8${role.charAt(0).toUpperCase() + role.slice(1)}${Game.time}`;
         console.log(`Spawning new ${role}: ${newName}`);
-        spawn.spawnCreep(body, newName, { memory: { role } });
+        
+        // Set memory based on role
+        // 根据角色设置内存
+        const memory = { role };
+        
+        // Add targetRoom for reserver role
+        // 为 reserver 角色添加目标房间
+        if (role === 'reserver') {
+            memory.targetRoom = 'E43N11';
+        }
+        
+        spawn.spawnCreep(body, newName, { memory });
     },
     // Function to display spawning status for spawn E39N8
     // 中文: 显示E39N8 spawn的生成状态

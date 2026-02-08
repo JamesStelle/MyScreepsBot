@@ -142,8 +142,8 @@ var PRTS = {
             var roomData = this.roomMonitoring[roomName];
             
             // Check if energy is at 300 or above
-            // 检查能量是否在300或以上
-            if (currentEnergy >= 300) {
+            // 检查能量是否在300
+            if (currentEnergy === 300) {
                 // If this is the first time we see 300+ energy, record the time
                 // 如果这是第一次看到300+能量，记录时间
                 if (roomData.stagnantSince === null) {

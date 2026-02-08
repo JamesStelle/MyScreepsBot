@@ -134,8 +134,8 @@ var runLink = {
                 return;
             }
             
-            // Find the best destination Link (must be empty)
-            // 寻找最佳目标 Link（必须为空）
+            // Find the best destination Link (must have at least 50 free capacity)
+            // 寻找最佳目标 Link（必须至少有50的空余容量）
             const bestLinkTo = this.findBestDestination(linkFrom, linkTos);
             
             if (bestLinkTo) {
@@ -146,7 +146,7 @@ var runLink = {
                 if (result === OK) {
                     // Log successful transfer
                     // 记录成功传输
-                    console.log(`Link transfer: ${linkFrom.pos} -> ${bestLinkTo.pos} (800 energy)`);
+                    console.log(`Link transfer: ${linkFrom.pos} -> ${bestLinkTo.pos} (${linkFrom.store[RESOURCE_ENERGY]} energy)`);
                 } else {
                     // Log transfer error
                     // 记录传输错误
@@ -165,31 +165,32 @@ var runLink = {
             return null;
         }
         
-        // Filter Links that are completely empty (0 energy)
-        // 筛选完全为空的 Link（0能量）
-        const emptyLinks = linkTos.filter(linkTo => {
-            return linkTo.store[RESOURCE_ENERGY] === 0;
+        // Filter Links that have at least 50 free capacity
+        // 筛选至少有50空余容量的 Link
+        const availableLinks = linkTos.filter(linkTo => {
+            const freeCapacity = linkTo.store.getFreeCapacity(RESOURCE_ENERGY);
+            return freeCapacity >= 50;
         });
         
-        if (emptyLinks.length === 0) {
+        if (availableLinks.length === 0) {
             return null;
         }
         
         // Priority 1: Storage Links (for storage)
         // 优先级1：Storage 附近的 Link（用于存储）
-        const storageLinks = emptyLinks.filter(link => link.destinationType === 'storage');
+        const storageLinks = availableLinks.filter(link => link.destinationType === 'storage');
         if (storageLinks.length > 0) {
-            // Return the first available empty storage link
-            // 返回第一个可用的空存储链接
+            // Return the first available storage link
+            // 返回第一个可用的存储链接
             return storageLinks[0];
         }
         
         // Priority 2: Controller Links (for upgrading)
         // 优先级2：控制器附近的 Link（用于升级）
-        const controllerLinks = emptyLinks.filter(link => link.destinationType === 'controller');
+        const controllerLinks = availableLinks.filter(link => link.destinationType === 'controller');
         if (controllerLinks.length > 0) {
-            // Return the first available empty controller link
-            // 返回第一个可用的空控制器链接
+            // Return the first available controller link
+            // 返回第一个可用的控制器链接
             return controllerLinks[0];
         }
         

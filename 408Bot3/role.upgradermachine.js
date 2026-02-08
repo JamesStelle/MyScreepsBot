@@ -83,7 +83,16 @@ const roleUpgradermachine = {
     stateMoving: function(creep) {
         const targetRoom = creep.memory.targetRoom;
         
-        // 如果已经在目标房间
+        // 移动到目标房间 - 使用智能寻路
+        this.moveToTargetRoom(creep);
+        creep.say(`🚶 → ${targetRoom}`);
+    },
+
+    /** 智能寻路到目标房间 */
+    moveToTargetRoom: function(creep) {
+        const targetRoom = creep.memory.targetRoom;
+        
+        // 检查是否已到达目标房间
         if (creep.room.name === targetRoom) {
             // 清除所有移动相关的缓存，防止反复横跳
             this.clearRoute(creep);
@@ -98,35 +107,18 @@ const roleUpgradermachine = {
                 return;
             }
             
-            // 立即移动到控制器附近，避免房间边缘徘徊
-            const controller = creep.room.controller;
-            if (!creep.pos.inRangeTo(controller, 3)) {
-                creep.moveTo(controller, {
-                    visualizePathStyle: {stroke: '#ffffff'},
-                    reusePath: 5,
-                    maxRooms: 1
-                });
-                creep.say('🚶 → 控制器');
-                return;
-            }
-            
-            // 已经在控制器附近，根据能量状态决定下一个状态
+            // 根据能量状态决定下一个状态并立即执行
             if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
                 creep.memory.state = 'HARVESTING';
+                // 在同一tick立即调用挖取逻辑
+                this.stateHarvesting(creep);
             } else {
                 creep.memory.state = 'UPGRADING';
+                // 在同一tick立即调用升级逻辑
+                this.stateUpgrading(creep);
             }
             return;
         }
-        
-        // 移动到目标房间 - 使用 claimer 的移动逻辑
-        this.moveToTargetRoom(creep);
-        creep.say(`🚶 → ${targetRoom}`);
-    },
-
-    /** 智能寻路到目标房间 */
-    moveToTargetRoom: function(creep) {
-        const targetRoom = creep.memory.targetRoom;
         
         // 检查并更新路径缓存
         if (!this.isRouteValid(creep)) {

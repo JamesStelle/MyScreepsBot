@@ -27,7 +27,8 @@ var roleSigner = {
         } else {
             // Sign the controller
             // 签名控制器
-            var result = creep.signController(controller, '愿此行，终抵群星');
+            var result = creep.signController(controller, '旅途总有一天会迎来终点,不必匆忙');
+            /*愿此行，终抵群星*/
             /*重铸未来，方舟启航*/
             /*跨越边境，直至前线*/
             /*世界全剧终，欢迎来到新艾利都*/

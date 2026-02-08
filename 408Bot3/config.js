@@ -8,7 +8,7 @@ module.exports = {
     
     // Whitelist of friendly players (for Tower defense)
     // 友方玩家白名单（用于Tower防御）
-    whitelist: ['MoSaSa'],
+    whitelist: ['cutecat_pixel'],
     
     // Future configuration options can be added here
     // 未来的配置选项可以在这里添加

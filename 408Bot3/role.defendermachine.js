@@ -1,23 +1,25 @@
 /**
- * BuilderMachine 角色 - 远程建造机器
+ * DefenderMachine 角色 - 远程防御机器
  * 
  * 使用方法：
- * 1. 创建 buildermachine 角色的 creep
+ * 1. 创建 defendermachine 角色的 creep
  * 2. 通过控制台分配目标房间：
- *    Game.creeps['buildermachine名称'].memory.targetRoom = '目标房间名'
- * 3. buildermachine 会自动寻路到目标房间，挖取能量并建造
+ *    Game.creeps['defendermachine名称'].memory.targetRoom = '目标房间名'
+ * 3. defendermachine 会自动寻路到目标房间，进行防御和维护
  * 
  * 示例：
- *    Game.creeps['BuilderMachine1'].memory.targetRoom = 'W1N1'
+ *    Game.creeps['DefenderMachine1'].memory.targetRoom = 'W1N1'
  * 
  * 状态机：
  * - WAITING: 等待目标房间分配
  * - MOVING: 移动到目标房间
  * - HARVESTING: 挖取能量
- * - BUILDING: 建造结构
+ * - DEFENDING: 攻击敌对单位
+ * - REPAIRING: 修复受损结构
+ * - PATROLLING: 巡逻待命
  */
 
-const roleBuildermachine = {
+const roleDefendermachine = {
     /** @param {Creep} creep **/
     run: function(creep) {
         // 初始化状态机
@@ -35,7 +37,7 @@ const roleBuildermachine = {
     /** 初始化 creep 设置 */
     initializeCreep: function(creep) {
         if (!creep.memory.targetRoom) {
-            console.log(`BuilderMachine ${creep.name} 等待目标房间分配，请使用: Game.creeps['${creep.name}'].memory.targetRoom = '房间名'`);
+            console.log(`DefenderMachine ${creep.name} 等待目标房间分配，请使用: Game.creeps['${creep.name}'].memory.targetRoom = '房间名'`);
             creep.say('⏳ 等待分配');
             creep.memory.state = 'WAITING';
             return false;
@@ -61,11 +63,14 @@ const roleBuildermachine = {
             case 'HARVESTING':
                 this.stateHarvesting(creep);
                 break;
-            case 'BUILDING':
-                this.stateBuilding(creep);
+            case 'DEFENDING':
+                this.stateDefending(creep);
                 break;
-            case 'TRANSFERRING':
-                this.stateTransferring(creep);
+            case 'REPAIRING':
+                this.stateRepairing(creep);
+                break;
+            case 'PATROLLING':
+                this.statePatrolling(creep);
                 break;
             default:
                 creep.memory.state = 'MOVING';
@@ -90,28 +95,24 @@ const roleBuildermachine = {
         this.moveToTargetRoom(creep);
         creep.say(`🚶 → ${targetRoom}`);
     },
-
     /** 智能寻路到目标房间 */
     moveToTargetRoom: function(creep) {
         const targetRoom = creep.memory.targetRoom;
         
         // 检查是否已到达目标房间
         if (creep.room.name === targetRoom) {
-            // 清除所有移动相关的缓存，防止反复横跳
             this.clearRoute(creep);
             delete creep.memory._move;
-            
-            console.log(`BuilderMachine ${creep.name} 已到达目标房间 ${targetRoom}`);
-            
-            // 根据能量状态决定下一个状态并立即执行
-            if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-                creep.memory.state = 'HARVESTING';
-                // 在同一tick立即调用挖取逻辑
-                this.stateHarvesting(creep);
+            creep.memory.state = 'PATROLLING';
+            const x = creep.pos.x;
+            const y = creep.pos.y;
+            if (x === 0 || x === 49 || y === 0 || y === 49) {
+                const tx = Math.min(48, Math.max(1, x + (x === 0 ? 1 : (x === 49 ? -1 : 0))));
+                const ty = Math.min(48, Math.max(1, y + (y === 0 ? 1 : (y === 49 ? -1 : 0))));
+                const inward = new RoomPosition(tx, ty, targetRoom);
+                creep.moveTo(inward, {visualizePathStyle: {stroke: '#0000ff'}, reusePath: 5, maxRooms: 1});
             } else {
-                creep.memory.state = 'BUILDING';
-                // 在同一tick立即调用建造逻辑
-                this.stateBuilding(creep);
+                this.statePatrolling(creep);
             }
             return;
         }
@@ -234,7 +235,7 @@ const roleBuildermachine = {
         const exit = creep.pos.findClosestByRange(exitDir);
         if (exit) {
             const moveResult = creep.moveTo(exit, {
-                visualizePathStyle: {stroke: '#ffffff'},
+                visualizePathStyle: {stroke: '#ff0000'},
                 reusePath: 5,
                 serializeMemory: true,
                 maxRooms: 1
@@ -254,38 +255,6 @@ const roleBuildermachine = {
         delete creep.memory.route;
         delete creep.memory.routeIndex;
     },
-
-    /** 定位状态 - 移动到房间中心区域 */
-    statePositioning: function(creep) {
-        const targetRoom = creep.memory.targetRoom;
-        
-        // 如果不在目标房间，切换回移动状态
-        if (creep.room.name !== targetRoom) {
-            delete creep.memory._move;
-            creep.memory.state = 'MOVING';
-            return;
-        }
-        
-        // 移动到房间中心区域，避免房间边缘徘徊
-        const roomCenter = new RoomPosition(25, 25, targetRoom);
-        if (!creep.pos.inRangeTo(roomCenter, 10)) {
-            creep.moveTo(roomCenter, {
-                visualizePathStyle: {stroke: '#ffffff'},
-                reusePath: 5,
-                maxRooms: 1
-            });
-            creep.say('🚶 → 房间中心');
-            return;
-        }
-        
-        // 已经在房间中心区域，根据能量状态决定下一个状态
-        if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-            creep.memory.state = 'HARVESTING';
-        } else {
-            creep.memory.state = 'BUILDING';
-        }
-    },
-
     /** 挖取状态 */
     stateHarvesting: function(creep) {
         const targetRoom = creep.memory.targetRoom;
@@ -297,9 +266,9 @@ const roleBuildermachine = {
             return;
         }
         
-        // 如果能量满了，切换到建造状态
+        // 如果能量满了，切换到巡逻状态
         if (creep.store.getFreeCapacity(RESOURCE_ENERGY) === 0) {
-            creep.memory.state = 'BUILDING';
+            creep.memory.state = 'PATROLLING';
             return;
         }
         
@@ -318,7 +287,7 @@ const roleBuildermachine = {
             } else if (harvestResult === OK) {
                 creep.say('⛏️ 挖取中');
             } else {
-                console.log(`BuilderMachine ${creep.name} 挖取失败: ${harvestResult}`);
+                console.log(`DefenderMachine ${creep.name} 挖取失败: ${harvestResult}`);
                 creep.say('❌ 挖取失败');
             }
         } else {
@@ -327,8 +296,8 @@ const roleBuildermachine = {
         }
     },
 
-    /** 建造状态 */
-    stateBuilding: function(creep) {
+    /** 防御状态 */
+    stateDefending: function(creep) {
         const targetRoom = creep.memory.targetRoom;
         
         // 如果不在目标房间，切换到移动状态
@@ -338,52 +307,62 @@ const roleBuildermachine = {
             return;
         }
         
-        // 如果能量空了，切换到挖取状态
-        if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
-            creep.memory.state = 'HARVESTING';
-            return;
+        // 寻找敌对目标
+        const hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+        const hostileStructures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
+            filter: (structure) => structure.structureType !== STRUCTURE_CONTROLLER
+        });
+        
+        let target = null;
+        
+        // 优先攻击敌对 creep
+        if (hostileCreeps.length > 0) {
+            // 优先攻击有攻击部件的敌对 creep
+            target = hostileCreeps.find(creep => 
+                creep.body.some(part => part.type === ATTACK || part.type === RANGED_ATTACK)
+            );
+            
+            // 如果没有攻击型 creep，攻击最近的
+            if (!target) {
+                target = creep.pos.findClosestByRange(hostileCreeps);
+            }
+        }
+        // 其次攻击敌对建筑
+        else if (hostileStructures.length > 0) {
+            // 优先攻击 spawn 和 tower
+            target = hostileStructures.find(structure => 
+                structure.structureType === STRUCTURE_SPAWN || 
+                structure.structureType === STRUCTURE_TOWER
+            );
+            
+            if (!target) {
+                target = creep.pos.findClosestByRange(hostileStructures);
+            }
         }
         
-        // 寻找建造目标
-        const constructionSites = creep.room.find(FIND_CONSTRUCTION_SITES);
-        if (constructionSites.length > 0) {
-            // 优先级：spawn > extension > tower > road > container > 其他
-            const priorityOrder = [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER, 
-                                 STRUCTURE_ROAD, STRUCTURE_CONTAINER];
-            
-            let targetSite = null;
-            for (const structureType of priorityOrder) {
-                targetSite = constructionSites.find(site => site.structureType === structureType);
-                if (targetSite) break;
-            }
-            
-            // 如果没有找到优先级建筑，选择第一个
-            if (!targetSite) {
-                targetSite = constructionSites[0];
-            }
-            
-            const buildResult = creep.build(targetSite);
-            if (buildResult === ERR_NOT_IN_RANGE) {
-                creep.moveTo(targetSite, {
-                    visualizePathStyle: {stroke: '#ffffff'},
-                    reusePath: 5,
-                    maxRooms: 1  // 限制在当前房间内寻路
+        if (target) {
+            const attackResult = creep.attack(target);
+            if (attackResult === ERR_NOT_IN_RANGE) {
+                creep.moveTo(target, {
+                    visualizePathStyle: {stroke: '#ff0000'},
+                    reusePath: 3,
+                    maxRooms: 1
                 });
-                creep.say('🚶 建造中');
-            } else if (buildResult === OK) {
-                creep.say('🔨 建造中');
+                creep.say('🚶 攻击中');
+            } else if (attackResult === OK) {
+                creep.say('⚔️ 攻击中');
             } else {
-                console.log(`BuilderMachine ${creep.name} 建造失败: ${buildResult}`);
-                creep.say('❌ 建造失败');
+                console.log(`DefenderMachine ${creep.name} 攻击失败: ${attackResult}`);
+                creep.say('❌ 攻击失败');
             }
         } else {
-            // 没有建造目标，切换到传输状态
-            creep.memory.state = 'TRANSFERRING';
+            // 没有敌对目标，切换到巡逻状态
+            creep.memory.state = 'PATROLLING';
         }
     },
 
-    /** 传输状态 */
-    stateTransferring: function(creep) {
+    /** 修复状态 */
+    stateRepairing: function(creep) {
         const targetRoom = creep.memory.targetRoom;
         
         // 如果不在目标房间，切换到移动状态
@@ -399,76 +378,166 @@ const roleBuildermachine = {
             return;
         }
         
-        // 检查是否有建造任务，如果有则切换回建造状态
-        const constructionSites = creep.room.find(FIND_CONSTRUCTION_SITES);
-        if (constructionSites.length > 0) {
-            creep.memory.state = 'BUILDING';
-            return;
-        }
-        
-        // 寻找传输目标：优先级 Spawn > Extension > Tower > Container
-        const targets = creep.room.find(FIND_STRUCTURES, {
+        // 寻找需要修复的结构
+        const damagedStructures = creep.room.find(FIND_STRUCTURES, {
             filter: (structure) => {
-                return (structure.structureType == STRUCTURE_EXTENSION ||
-                        structure.structureType == STRUCTURE_SPAWN ||
-                        structure.structureType == STRUCTURE_TOWER ||
-                        structure.structureType == STRUCTURE_CONTAINER) && 
-                        structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+                return structure.hits < structure.hitsMax && 
+                       structure.structureType !== STRUCTURE_WALL &&
+                       structure.structureType !== STRUCTURE_RAMPART;
             }
         });
         
-        if (targets.length > 0) {
-            // 按优先级排序
-            const priorityOrder = [STRUCTURE_SPAWN, STRUCTURE_EXTENSION, STRUCTURE_TOWER, STRUCTURE_CONTAINER];
+        if (damagedStructures.length > 0) {
+            // 优先修复重要建筑：spawn > tower > extension > 其他
+            const priorityOrder = [STRUCTURE_SPAWN, STRUCTURE_TOWER, STRUCTURE_EXTENSION];
             let targetStructure = null;
             
             for (const structureType of priorityOrder) {
-                targetStructure = targets.find(target => target.structureType === structureType);
+                targetStructure = damagedStructures.find(structure => structure.structureType === structureType);
                 if (targetStructure) break;
             }
             
-            // 如果没有找到优先级建筑，选择第一个
+            // 如果没有找到优先级建筑，选择血量最少的
             if (!targetStructure) {
-                targetStructure = targets[0];
+                targetStructure = damagedStructures.reduce((min, structure) => 
+                    structure.hits < min.hits ? structure : min
+                );
             }
             
-            const transferResult = creep.transfer(targetStructure, RESOURCE_ENERGY);
-            if (transferResult === ERR_NOT_IN_RANGE) {
+            const repairResult = creep.repair(targetStructure);
+            if (repairResult === ERR_NOT_IN_RANGE) {
                 creep.moveTo(targetStructure, {
                     visualizePathStyle: {stroke: '#00ff00'},
                     reusePath: 5,
                     maxRooms: 1
                 });
-                creep.say('🚶 传输中');
-            } else if (transferResult === OK) {
-                creep.say('⚡ 传输中');
+                creep.say('🚶 修复中');
+            } else if (repairResult === OK) {
+                creep.say('🔧 修复中');
             } else {
-                console.log(`BuilderMachine ${creep.name} 传输失败: ${transferResult}`);
-                creep.say('❌ 传输失败');
+                console.log(`DefenderMachine ${creep.name} 修复失败: ${repairResult}`);
+                creep.say('❌ 修复失败');
             }
         } else {
-            // 没有传输目标，尝试升级控制器
-            const controller = creep.room.controller;
-            if (controller && controller.owner && controller.owner.username === creep.owner.username) {
-                const upgradeResult = creep.upgradeController(controller);
-                if (upgradeResult === ERR_NOT_IN_RANGE) {
-                    creep.moveTo(controller, {
-                        visualizePathStyle: {stroke: '#ffffff'},
-                        reusePath: 5,
-                        maxRooms: 1
-                    });
-                    creep.say('🚶 升级中');
-                } else if (upgradeResult === OK) {
-                    creep.say('⚡ 升级中');
-                }
-            } else {
-                creep.say('✅ 无任务');
-            }
+            // 没有需要修复的结构，切换到巡逻状态
+            creep.memory.state = 'PATROLLING';
         }
+    },
+    /** 巡逻状态 */
+    statePatrolling: function(creep) {
+        const targetRoom = creep.memory.targetRoom;
+        
+        // 如果不在目标房间，切换到移动状态
+        if (creep.room.name !== targetRoom) {
+            delete creep.memory._move;
+            creep.memory.state = 'MOVING';
+            return;
+        }
+        
+        // 检查是否有敌对目标，优先级最高
+        const hostileCreeps = creep.room.find(FIND_HOSTILE_CREEPS);
+        const hostileStructures = creep.room.find(FIND_HOSTILE_STRUCTURES, {
+            filter: (structure) => structure.structureType !== STRUCTURE_CONTROLLER
+        });
+        
+        if (hostileCreeps.length > 0 || hostileStructures.length > 0) {
+            creep.memory.state = 'DEFENDING';
+            return;
+        }
+        
+        // 检查是否有需要修复的结构
+        const damagedStructures = creep.room.find(FIND_STRUCTURES, {
+            filter: (structure) => {
+                return structure.hits < structure.hitsMax && 
+                       structure.structureType !== STRUCTURE_WALL &&
+                       structure.structureType !== STRUCTURE_RAMPART;
+            }
+        });
+        
+        if (damagedStructures.length > 0 && creep.store.getUsedCapacity(RESOURCE_ENERGY) > 0) {
+            creep.memory.state = 'REPAIRING';
+            return;
+        }
+        
+        // 如果能量不足，去挖取
+        if (creep.store.getUsedCapacity(RESOURCE_ENERGY) === 0) {
+            creep.memory.state = 'HARVESTING';
+            return;
+        }
+        
+        // 执行巡逻移动
+        this.performPatrol(creep);
+    },
+
+    /** 执行巡逻移动 */
+    performPatrol: function(creep) {
+        // 初始化巡逻点
+        if (!creep.memory.patrolPoints) {
+            creep.memory.patrolPoints = this.generatePatrolPoints(creep.room.name);
+            creep.memory.currentPatrolIndex = 0;
+        }
+        
+        const patrolPoints = creep.memory.patrolPoints;
+        const currentIndex = creep.memory.currentPatrolIndex;
+        
+        if (patrolPoints.length === 0) {
+            creep.say('🛡️ 待命中');
+            return;
+        }
+        
+        const targetPoint = patrolPoints[currentIndex];
+        const targetPos = new RoomPosition(targetPoint.x, targetPoint.y, creep.room.name);
+        
+        // 如果到达当前巡逻点，移动到下一个
+        if (creep.pos.inRangeTo(targetPos, 2)) {
+            creep.memory.currentPatrolIndex = (currentIndex + 1) % patrolPoints.length;
+            creep.say('🛡️ 巡逻中');
+        } else {
+            creep.moveTo(targetPos, {
+                visualizePathStyle: {stroke: '#0000ff'},
+                reusePath: 10,
+                maxRooms: 1
+            });
+            creep.say('🚶 巡逻中');
+        }
+    },
+
+    /** 生成巡逻点 */
+    generatePatrolPoints: function(roomName) {
+        const room = Game.rooms[roomName];
+        if (!room) return [];
+        
+        const patrolPoints = [];
+        
+        // 添加房间四个角落的巡逻点
+        patrolPoints.push({x: 10, y: 10});
+        patrolPoints.push({x: 40, y: 10});
+        patrolPoints.push({x: 40, y: 40});
+        patrolPoints.push({x: 10, y: 40});
+        
+        // 如果有控制器，添加控制器附近的巡逻点
+        if (room.controller) {
+            const controller = room.controller;
+            patrolPoints.push({x: controller.pos.x, y: controller.pos.y});
+        }
+        
+        // 添加 spawn 附近的巡逻点
+        const spawns = room.find(FIND_MY_SPAWNS);
+        spawns.forEach(spawn => {
+            patrolPoints.push({x: spawn.pos.x, y: spawn.pos.y});
+        });
+        
+        // 添加能量源附近的巡逻点
+        const sources = room.find(FIND_SOURCES);
+        sources.forEach(source => {
+            patrolPoints.push({x: source.pos.x, y: source.pos.y});
+        });
+        
+        return patrolPoints;
     }
 };
 
-module.exports = roleBuildermachine;
+module.exports = roleDefendermachine;
 
 /** 记录房间信息到内存 */
 function recordRoomInfo(roomName) {
@@ -496,6 +565,16 @@ function recordRoomInfo(roomName) {
     
     // 记录过道房间信息
     roomMemory.isHighway = isHighwayRoom(roomName);
+    
+    // 记录威胁信息
+    const hostileCreeps = room.find(FIND_HOSTILE_CREEPS);
+    const hostileStructures = room.find(FIND_HOSTILE_STRUCTURES, {
+        filter: (structure) => structure.structureType !== STRUCTURE_CONTROLLER
+    });
+    
+    roomMemory.hostileCreeps = hostileCreeps.length;
+    roomMemory.hostileStructures = hostileStructures.length;
+    roomMemory.lastThreatCheck = Game.time;
 }
 
 /** 判断是否为过道房间 */
