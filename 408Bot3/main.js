@@ -20,8 +20,7 @@ var runLink = safeRequire('runLink');
 var Tower = safeRequire('Tower');
 var PRTS = safeRequire('PRTS');
 var runGeneralRoom = safeRequire('runGeneralRoom');
-var runRoomPlannerVisual = safeRequire('runRoomPlannerVisual');
-//var Terminal = safeRequire('Terminal');
+var Terminal = safeRequire('Terminal');
 
 // Planner模块因为文件较大，已移除自动加载
 // 如需使用，请在控制台手动执行: require('planner')
@@ -110,7 +109,7 @@ module.exports.loop = function () {
                 console.log('PRTS room stagnation monitoring error:', error.message);
             }
         }
-        /*
+        
         if (Terminal && Terminal.run) {
             try {
                 Terminal.run();
@@ -118,20 +117,7 @@ module.exports.loop = function () {
                 console.log('Terminal error:', error.message);
             }
         }
-        */
         
-        // Room planner visual - 房间规划可视化（仅在控制台手动调用）
-        // 使用方法: runRoomPlannerVisual.findExtensions("房间名")
-        // 不在主循环中自动执行，避免性能影响
-        
-        // 将runRoomPlannerVisual导出到全局作用域供控制台使用
-        if (runRoomPlannerVisual && !global.runRoomPlannerVisual) {
-            global.runRoomPlannerVisual = runRoomPlannerVisual;
-        }
-        
-        
-        // Planner Flag自动化已移除，避免CPU超时
-        // 如需使用planner，请在控制台手动执行：require('planner')
         
     } catch (globalError) {
         // Catch any unexpected errors in the main loop
