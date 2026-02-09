@@ -21,6 +21,7 @@ var Tower = safeRequire('Tower');
 var PRTS = safeRequire('PRTS');
 var runGeneralRoom = safeRequire('runGeneralRoom');
 var runRoomPlannerVisual = safeRequire('runRoomPlannerVisual');
+//var Terminal = safeRequire('Terminal');
 
 // Planner模块因为文件较大，已移除自动加载
 // 如需使用，请在控制台手动执行: require('planner')
@@ -109,6 +110,15 @@ module.exports.loop = function () {
                 console.log('PRTS room stagnation monitoring error:', error.message);
             }
         }
+        /*
+        if (Terminal && Terminal.run) {
+            try {
+                Terminal.run();
+            } catch (error) {
+                console.log('Terminal error:', error.message);
+            }
+        }
+        */
         
         // Room planner visual - 房间规划可视化（仅在控制台手动调用）
         // 使用方法: runRoomPlannerVisual.findExtensions("房间名")

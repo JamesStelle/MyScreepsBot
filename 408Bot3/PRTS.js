@@ -1,3 +1,52 @@
+// 可用命令（PRTS）
+// [系统初始化]
+// - init(): 初始化PRTS系统并挂载到 global.prts
+//
+// [房间停滞监控]
+// - monitorRoomStagnation(): 扫描并记录房间停滞状态
+// - getRoomStagnationStatus(roomName): 获取指定房间停滞报告
+// - clearRoomStagnationData(roomName?): 清除某房或全部房间的停滞数据
+//
+// [控制器能量跟踪]
+// - trackControllerEnergy(): 记录控制器进度历史（每tick）
+// - getControllerEnergyStats(roomName): 获取指定房间能量统计
+// - clearControllerEnergyData(roomName?): 清除控制器能量跟踪数据
+//
+// [控制台美化与描述]
+// - describeError(code): 将错误码转为中文描述
+// - describeResource(type): 将资源类型转为中文描述
+// - describeStructure(type): 将结构类型转为中文描述
+// - describeAction(action, result, creepName, target?): 美化动作结果
+//
+// [房间/爬虫分析]
+// - analyzeRoom(roomName): 输出房间详细分析
+// - monitorCreep(creepName): 输出爬虫详细信息
+//
+// [快捷命令]
+// - listCreeps(): 按角色列出爬虫
+// - energy(roomName?): 显示房间能量状态（默认E39N8）
+// - monitor(creepName): 监控特定爬虫
+// - stagnation(roomName?): 显示房间或全部房间的停滞状态
+// - clearStagnation(roomName?): 清除停滞监控数据
+// - controllerStats(roomName?): 显示房间或全部房间的控制器能量统计
+// - clearControllerStats(roomName?): 清除控制器能量跟踪数据
+//
+// [帮助]
+// - help(category?): 显示帮助菜单或分类命令
+// - h(category?): 帮助命令简写
+// - showBasicHelp(): 基础监控命令说明
+// - showControllerHelp(): 控制器能量命令说明
+// - showStagnationHelp(): 停滞监控命令说明
+// - showFormatHelp(): 控制台美化命令说明
+// - showDebugHelp(): 测试调试命令说明
+// - showAllHelp(): 显示所有命令列表
+//
+// [可视化测试]
+// - testVisualWarning(roomName?): 在房间显示停滞警告可视化
+// PRTS (Precision Reconnaissance and Tactical Support) System
+// PRTS（精密侦察战术支援）系统 - 控制台返回值美化器
+
+
 // PRTS (Precision Reconnaissance and Tactical Support) System
 // PRTS（精密侦察战术支援）系统 - 控制台返回值美化器
 var PRTS = {

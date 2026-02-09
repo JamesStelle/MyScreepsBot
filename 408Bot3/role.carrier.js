@@ -89,30 +89,52 @@ var roleCarrier = {
                                 creep.moveTo(towers[0], {visualizePathStyle: {stroke: '#ffffff'}});
                             }
                         }
-                        // Priority 5: Transfer to containers near controller (no conditions)
-                        // 优先级5：向控制器附近的容器传输能量（无条件限制）
                         else {
-                            var controller = creep.room.controller;
-                            var controllerContainers = [];
-                            
-                            if(controller) {
-                                controllerContainers = controller.pos.findInRange(FIND_STRUCTURES, 2, {
+                            var storage = creep.room.storage;
+                            var centralContainers = [];
+                            if(storage) {
+                                centralContainers = storage.pos.findInRange(FIND_STRUCTURES, 2, {
                                     filter: (structure) => {
                                         return structure.structureType == STRUCTURE_CONTAINER &&
                                                structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
                                     }
                                 });
                             }
-                            
-                            if(controllerContainers.length > 0) {
-                                if(creep.transfer(controllerContainers[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
-                                    creep.moveTo(controllerContainers[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                            if(centralContainers.length > 0) {
+                                if(creep.transfer(centralContainers[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                    creep.moveTo(centralContainers[0], {visualizePathStyle: {stroke: '#ffffff'}});
                                 }
-                            }
-                            else {
-                                // No targets available, wait
-                                // 中文: 没有可用目标，等待
-                                creep.say('⏳ wait');
+                            } else {
+                                var controller = creep.room.controller;
+                                var controllerContainers = [];
+                                
+                                if(controller) {
+                                    controllerContainers = controller.pos.findInRange(FIND_STRUCTURES, 2, {
+                                        filter: (structure) => {
+                                            return structure.structureType == STRUCTURE_CONTAINER &&
+                                                   structure.store.getFreeCapacity(RESOURCE_ENERGY) > 0;
+                                        }
+                                    });
+                                }
+                                
+                                if(controllerContainers.length > 0) {
+                                    if(creep.transfer(controllerContainers[0], RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                        creep.moveTo(controllerContainers[0], {visualizePathStyle: {stroke: '#ffffff'}});
+                                    }
+                                } else if (storage && storage.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+                                    if(creep.transfer(storage, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                        creep.moveTo(storage, {visualizePathStyle: {stroke: '#ffffff'}});
+                                    }
+                                } else {
+                                    var terminal = creep.room.terminal;
+                                    if(terminal && terminal.store.getFreeCapacity(RESOURCE_ENERGY) > 0) {
+                                        if(creep.transfer(terminal, RESOURCE_ENERGY) == ERR_NOT_IN_RANGE) {
+                                            creep.moveTo(terminal, {visualizePathStyle: {stroke: '#ffffff'}});
+                                        }
+                                    } else {
+                                        creep.say('⏳ wait');
+                                    }
+                                }
                             }
                         }
                     }

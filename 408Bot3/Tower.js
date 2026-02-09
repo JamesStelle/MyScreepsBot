@@ -86,8 +86,9 @@ module.exports = {
      * 和平模式 - 单个塔楼处理维护工作
      */
     peacefulMode: function(tower) {
-        // Repair damaged structures (including walls and ramparts)
-        // 修复受损建筑（包括城墙和城墙）
+        if (tower.store[RESOURCE_ENERGY] < 0.3 * tower.store.getCapacity(RESOURCE_ENERGY)) {
+            return;
+        }
         const closestDamagedStructure = tower.pos.findClosestByRange(FIND_STRUCTURES, {
             filter: (structure) => {
                 return structure.hits < structure.hitsMax;

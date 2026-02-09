@@ -17,10 +17,27 @@
  * 🚀 快速开始:
  * 
  * 1. 激活分段内存任务:
- *    memorySegmented.updateResourceType("H")           // Storage→Lab搬运氢气
- *    memorySegmented.updateLabResourceType("energy")   // Lab→Storage搬运能量
- *    memorySegmented.updateTerminalResourceType("power") // Storage→Terminal搬运power
+ *  
+ * // 激活多个任务
+ * 分段0 (Storage → Lab)
+ * memorySegmented.updateResourceType("H")  // 激活，搬运氢气
+ *
+ * 分段1 (Lab → Storage)
+ * memorySegmented.updateLabResourceType("energy")  // 激活，搬运能量
+ *
+ * 分段2 (Storage → Terminal)
+ * memorySegmented.updateTerminalResourceType("power")  // 激活，搬运power
+ *
+ * 分段3 (Terminal → Storage)
+ * memorySegmented.updateTerminalStorageResourceType("U")  // 激活，搬运U
+ *
+ * 分段4 (Terminal → Lab)
+ * memorySegmented.updateTerminalLabResourceType("H")  // 激活，搬运氢气
+ *
+ * 分段5 (Lab → Terminal)
+ * memorySegmented.updateLabTerminalResourceType("O")  // 激活，搬运氧气
  * 
+ *
  * 2. 生成transferee爬虫:
  *    Game.spawns['Spawn1'].spawnCreep([CARRY,CARRY,MOVE], 'transferee1', {memory: {role: 'transferee'}})
  * 
@@ -62,11 +79,6 @@
  * for(let i = 1; i <= 3; i++) {
  *     Game.spawns['Spawn1'].spawnCreep([CARRY,CARRY,MOVE], `transferee${i}`, {memory: {role: 'transferee'}})
  * }
- * 
- * // 激活多个任务
- * memorySegmented.updateResourceType("H")              // 分段0: Storage→Lab氢气
- * memorySegmented.updateLabResourceType("O")           // 分段1: Lab→Storage氧气
- * memorySegmented.updateTerminalResourceType("energy") // 分段2: Storage→Terminal能量
  * 
  * 💡 使用技巧:
  * - transferee会自动分配到不同分段，避免多个爬虫争抢同一任务
@@ -125,7 +137,7 @@ var roleTransferee = {
         // 如果爬虫存储为空，切换到收集状态
         if(creep.store.getUsedCapacity() == 0) {
             creep.memory.delivering = false;
-            creep.say('� collect');
+            creep.say('🔍 collect');
         }
         // If creep is full, switch to delivering state
         // 如果爬虫存储满了，切换到传输状态
@@ -200,8 +212,10 @@ var roleTransferee = {
     // Check if creep should handle this specific task
     // 检查爬虫是否应该处理此特定任务
     shouldHandleTask: function(creep, taskInfo) {
-        // Simple assignment: assign based on creep name hash and segment
-        // 简单分配：基于爬虫名称哈希和分段进行分配
+        var assigned = creep.memory.assignedSegment;
+        if (assigned !== undefined && assigned !== null) {
+            return assigned === taskInfo.segment;
+        }
         var creepHash = this.hashString(creep.name) % 6;
         return creepHash === taskInfo.segment;
     },
