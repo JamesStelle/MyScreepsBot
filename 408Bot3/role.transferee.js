@@ -99,6 +99,7 @@
  * ========================================
  */
 
+require('memorySegmented');
 var roleTransferee = {
 
     /** @param {Creep} creep **/
@@ -172,15 +173,10 @@ var roleTransferee = {
     // Get active task from segmented memory
     // 从分段内存获取激活的任务
     getActiveTask: function(creep) {
-        // Check if memorySegmented is available
-        // 检查memorySegmented是否可用
         if (!global.memorySegmented) {
             console.log(`❌ Transferee ${creep.name}: memorySegmented not available`);
             return null;
         }
-
-        // Get all tasks from segments 0-5
-        // 从分段0-5获取所有任务
         var tasks = [
             { segment: 0, task: global.memorySegmented.getStorageLabTask() },
             { segment: 1, task: global.memorySegmented.getLabStorageTask() },
@@ -189,24 +185,21 @@ var roleTransferee = {
             { segment: 4, task: global.memorySegmented.getTerminalLabTask() },
             { segment: 5, task: global.memorySegmented.getLabTerminalTask() }
         ];
-
-        // Find first active task (status = 'active' and has resourceType)
-        // 找到第一个激活的任务（状态为'active'且有resourceType）
+        var active = [];
         for (let taskInfo of tasks) {
-            if (taskInfo.task && 
-                taskInfo.task.status === 'active' && 
-                taskInfo.task.resourceType && 
-                taskInfo.task.resourceType !== null) {
-                
-                // Check if this creep should handle this task
-                // 检查此爬虫是否应该处理此任务
-                if (this.shouldHandleTask(creep, taskInfo)) {
-                    return taskInfo;
-                }
+            if (taskInfo.task && taskInfo.task.status === 'active' && taskInfo.task.resourceType && taskInfo.task.resourceType !== null) {
+                active.push(taskInfo);
             }
         }
-
-        return null;
+        if (active.length === 0) {
+            return null;
+        }
+        for (let taskInfo of active) {
+            if (this.shouldHandleTask(creep, taskInfo)) {
+                return taskInfo;
+            }
+        }
+        return active[0];
     },
 
     // Check if creep should handle this specific task

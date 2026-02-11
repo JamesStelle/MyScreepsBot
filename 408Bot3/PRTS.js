@@ -152,63 +152,31 @@ var PRTS = {
                 continue;
             }
             
-            // Get spawn and extension structures
-            // 获取spawn和extension结构
-            var energyStructures = room.find(FIND_STRUCTURES, {
-                filter: function(structure) {
-                    return structure.structureType === STRUCTURE_SPAWN ||
-                           structure.structureType === STRUCTURE_EXTENSION;
-                }
-            });
-            
-            // Calculate total energy capacity and current energy
-            // 计算总能量容量和当前能量
-            var totalCapacity = 0;
-            var currentEnergy = 0;
-            
-            for (var i = 0; i < energyStructures.length; i++) {
-                var structure = energyStructures[i];
-                totalCapacity += structure.store.getCapacity(RESOURCE_ENERGY) || 0;
-                currentEnergy += structure.store[RESOURCE_ENERGY] || 0;
-            }
-            
-            // Skip rooms with capacity <= 300
-            // 跳过容量 <= 300 的房间
-            if (totalCapacity <= 300) {
-                continue;
-            }
+            var creepCount = room.find(FIND_MY_CREEPS).length;
             
             // Initialize room monitoring data if not exists
             // 如果不存在则初始化房间监控数据
             if (!this.roomMonitoring[roomName]) {
                 this.roomMonitoring[roomName] = {
-                    stagnantSince: null,
-                    lastEnergyCheck: currentEnergy,
+                    lastNonZeroTick: Game.time,
                     isStagnant: false
                 };
             }
             
             var roomData = this.roomMonitoring[roomName];
             
-            // Check if energy is at 300 or above
-            // 检查能量是否在300
-            if (currentEnergy === 300) {
-                // If this is the first time we see 300+ energy, record the time
-                // 如果这是第一次看到300+能量，记录时间
-                if (roomData.stagnantSince === null) {
-                    roomData.stagnantSince = Game.time;
-                    roomData.lastEnergyCheck = currentEnergy;
+            if (creepCount > 0) {
+                if (roomData.isStagnant) {
+                    console.log("✅ 房间 " + roomName + " 停滞状态已解除");
                 }
-                // Check if it has been stagnant for 1500 ticks
-                // 检查是否已经停滞了1500个tick
-                else if (Game.time - roomData.stagnantSince >= 1500) {
+                roomData.lastNonZeroTick = Game.time;
+                roomData.isStagnant = false;
+            } else {
+                if ((Game.time - (roomData.lastNonZeroTick || Game.time)) >= 1500) {
                     if (!roomData.isStagnant) {
                         roomData.isStagnant = true;
-                        console.log("⚠️ 房间 " + roomName + " 检测到停滞状态 - 能量维持在300+已超过1500tick");
+                        console.log("⚠️ 房间 " + roomName + " 检测到停滞状态 - 1500tick内爬虫数量为0");
                     }
-                    
-                    // Display stagnation warning in room visual
-                    // 在房间视觉中显示停滞警告
                     room.visual.text("⚠️ 房间停滞", 25, 25, {
                         color: '#ff0000',
                         font: 1.2,
@@ -218,18 +186,6 @@ var PRTS = {
                         backgroundPadding: 0.3
                     });
                 }
-            }
-            else {
-                // Energy dropped below 300, reset monitoring
-                // 能量降到300以下，重置监控
-                if (roomData.stagnantSince !== null) {
-                    if (roomData.isStagnant) {
-                        console.log("✅ 房间 " + roomName + " 停滞状态已解除");
-                    }
-                    roomData.stagnantSince = null;
-                    roomData.isStagnant = false;
-                }
-                roomData.lastEnergyCheck = currentEnergy;
             }
         }
         
@@ -256,33 +212,16 @@ var PRTS = {
             return "❌ 房间 " + roomName + " 不可见";
         }
         
-        // Get current energy info
-        // 获取当前能量信息
-        var energyStructures = room.find(FIND_STRUCTURES, {
-            filter: function(structure) {
-                return structure.structureType === STRUCTURE_SPAWN ||
-                       structure.structureType === STRUCTURE_EXTENSION;
-            }
-        });
-        
-        var totalCapacity = 0;
-        var currentEnergy = 0;
-        
-        for (var i = 0; i < energyStructures.length; i++) {
-            var structure = energyStructures[i];
-            totalCapacity += structure.store.getCapacity(RESOURCE_ENERGY) || 0;
-            currentEnergy += structure.store[RESOURCE_ENERGY] || 0;
-        }
-        
         var status = ["🏠 房间停滞监控: " + roomName];
-        status.push("⚡ 当前能量: " + currentEnergy + "/" + totalCapacity);
+        var creepCount = room.find(FIND_MY_CREEPS).length;
+        status.push("🤖 当前爬虫: " + creepCount + "个");
         
         if (roomData.isStagnant) {
-            var stagnantDuration = Game.time - roomData.stagnantSince;
+            var stagnantDuration = Game.time - (roomData.lastNonZeroTick || Game.time);
             status.push("⚠️ 状态: 停滞中 (已持续 " + stagnantDuration + " tick)");
-        } else if (roomData.stagnantSince !== null) {
-            var currentDuration = Game.time - roomData.stagnantSince;
-            status.push("⏳ 状态: 监控中 (已维持300+能量 " + currentDuration + "/1500 tick)");
+        } else if (creepCount === 0) {
+            var currentDuration = Game.time - (roomData.lastNonZeroTick || Game.time);
+            status.push("⏳ 状态: 监控中 (无爬虫 " + currentDuration + "/1500 tick)");
         } else {
             status.push("✅ 状态: 正常");
         }
@@ -721,7 +660,7 @@ var PRTS = {
         console.log('// prts.clearStagnation("E39N8")  - 清除特定房间停滞数据');
         console.log('// prts.clearStagnation()         - 清除所有房间停滞数据');
         console.log('');
-        console.log('💡 停滞条件: 容量>300且能量维持300+超过1500tick');
+        console.log('💡 停滞条件: 1500tick内当前房间爬虫数量为0');
         console.log('💡 停滞时会在房间(25,25)显示视觉警告');
     },
 

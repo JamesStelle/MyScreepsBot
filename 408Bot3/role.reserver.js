@@ -71,7 +71,8 @@ const roleReserver = {
                 if (attackResult === ERR_NOT_IN_RANGE) {
                     creep.moveTo(controller, {
                         visualizePathStyle: {stroke: '#ff0000'},
-                        reusePath: 10
+                        reusePath: 10,
+                        costCallback: this.getAvoidHostilesCostCallback(creep)
                     });
                 } else if (attackResult === OK) {
                     console.log(`Reserver ${creep.name}: 正在攻击 ${controller.owner.username} 的控制器 (等级 ${controller.level})`);
@@ -93,7 +94,8 @@ const roleReserver = {
                 if (attackResult === ERR_NOT_IN_RANGE) {
                     creep.moveTo(controller, {
                         visualizePathStyle: {stroke: '#ff0000'},
-                        reusePath: 10
+                        reusePath: 10,
+                        costCallback: this.getAvoidHostilesCostCallback(creep)
                     });
                 } else if (attackResult === OK) {
                     console.log(`Reserver ${creep.name}: 正在攻击 ${controller.reservation.username} 的预定`);
@@ -107,7 +109,8 @@ const roleReserver = {
         if (reserveResult === ERR_NOT_IN_RANGE) {
             creep.moveTo(controller, {
                 visualizePathStyle: {stroke: '#00ff00'},
-                reusePath: 10
+                reusePath: 10,
+                costCallback: this.getAvoidHostilesCostCallback(creep)
             });
             creep.say('🚶 接近中');
         } else if (reserveResult === OK) {
@@ -265,7 +268,8 @@ const roleReserver = {
                 visualizePathStyle: {stroke: '#00ff00'},
                 reusePath: 5,
                 serializeMemory: true,
-                maxRooms: 1
+                    maxRooms: 1,
+                    costCallback: this.getAvoidHostilesCostCallback(creep)
             });
             
             if (moveResult === ERR_NO_PATH) {
@@ -277,6 +281,29 @@ const roleReserver = {
         }
     },
 
+    
+    getAvoidHostilesCostCallback: function(creep) {
+        return function(roomName, costMatrix) {
+            var room = Game.rooms[roomName];
+            if (!room) return costMatrix;
+            var hostiles = room.find(FIND_CREEPS, { filter: function(c) { return !c.my; } });
+            for (var i = 0; i < hostiles.length; i++) {
+                var pos = hostiles[i].pos;
+                for (var dx = -4; dx <= 4; dx++) {
+                    for (var dy = -4; dy <= 4; dy++) {
+                        var x = pos.x + dx;
+                        var y = pos.y + dy;
+                        if (x >= 0 && x < 50 && y >= 0 && y < 50) {
+                            if (Math.max(Math.abs(dx), Math.abs(dy)) <= 4) {
+                                costMatrix.set(x, y, 255);
+                            }
+                        }
+                    }
+                }
+            }
+            return costMatrix;
+        };
+    },
     /** 清除路径缓存 */
     clearRoute: function(creep) {
         delete creep.memory.route;

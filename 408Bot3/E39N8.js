@@ -3,19 +3,19 @@ module.exports = {
     // 中文: 集中式角色配置 - 单一数据源
     getRoleBodyConfigurations: function() {
         return {
-            harvester: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            // 7 WORK + 1 CARRY + 7 MOVE
-            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
-            // 7 CARRY + 7 MOVE
+            
+            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            // 10 WORK + 2 CARRY + 10 MOVE
+            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+            // 10 CARRY + 10 MOVE
             carrierMineral: [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
             // 3 CARRY + 3 MOVE
             upgrader: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY],
             // 6 WORK + 1 CARRY + 6 MOVE
-            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY],
-            // 5 WORK + 2 CARRY + 7 MOVE
-            reserver:[CLAIM,CLAIM,MOVE,MOVE]
+            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY],
+            // 5 WORK + 4 CARRY + 9 MOVE
+            reserver:[CLAIM, MOVE]
         };
     },
 
@@ -23,14 +23,14 @@ module.exports = {
     // 中文: 获取每个角色的最小爬虫数量
     getMinCreepCounts: function() {
         return {
-            harvester: 0,
+
             harvester0: 1,
             harvester1: 1,
             carrier: 2,
-            carrierMineral: 1,
+            carrierMineral: 0,
             upgrader: 1,
-            builder: 1,
-            reserver:1
+            builder: 0,
+            reserver:3
         };
     },
 
@@ -38,7 +38,7 @@ module.exports = {
         // Count creeps by role (ordered by spawn priority) - only in E39N8 room
         // 中文: 统计各角色的爬虫数量（按生成优先级排序）- 仅统计E39N8房间内的
         const creepCount = {
-            harvester: _.filter(Game.creeps, c => c.memory.role === 'harvester' && c.room.name === 'E39N8').length,
+
             harvester0: _.filter(Game.creeps, c => c.memory.role === 'harvester0' && c.room.name === 'E39N8').length,
             harvester1: _.filter(Game.creeps, c => c.memory.role === 'harvester1' && c.room.name === 'E39N8').length,
             carrier: _.filter(Game.creeps, c => c.memory.role === 'carrier' && c.room.name === 'E39N8').length,
@@ -86,7 +86,7 @@ module.exports = {
         
         // Prioritize spawning based on role shortages (ordered by priority)
         // 中文: 根据角色短缺优先生成（按优先级排序）
-        const rolesPriority = ['harvester', 'harvester0', 'harvester1', 'carrier', 'carrierMineral', 'upgrader', 'builder','reserver'];
+        const rolesPriority = ['harvester0', 'harvester1', 'carrier', 'carrierMineral', 'upgrader', 'builder','reserver'];
         
         for (const role of rolesPriority) {
             if (creepCount[role] < minCreeps[role]) {

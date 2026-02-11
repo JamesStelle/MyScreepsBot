@@ -28,4 +28,6 @@ var Terminal = {
     }
 };
 
+global.Terminal = Terminal;
+
 module.exports = Terminal;

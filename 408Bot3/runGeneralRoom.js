@@ -1,3 +1,48 @@
+// 控制台命令总览
+// 使用：在控制台调用 runGeneralRoom.<命令>(...)
+// 帮助：runGeneralRoom.help("分类") 或 runGeneralRoom.h("分类")
+// 分类与命令：
+// [容量计算]
+// - calculateTotalCapacity(level)        计算指定RCL总容量
+// - displayCapacityTable()               显示所有等级容量表
+// [房间分析]
+// - analyzeRoom(roomName)                分析指定房间状态
+// - getRoomEnergyStats(roomName)         获取房间能量统计
+// [房间轮询]
+// - pollRooms()                          轮询所有拥有的房间
+// - findRoomsWithSpawn()                 查找有Spawn的房间
+// - quickStatus()                        快速查看房间状态
+// - monitorRoom(roomName, duration)      监控特定房间指定tick
+// - stopMonitor(roomName)                停止监控房间
+// - executeMonitoring()                  执行监控检查
+// [角色配置]
+// - displayRoleConfigurations(level?)    显示角色配置
+// - getRoleBodyConfigurations(level)     获取身体配置
+// - getRoleConfigurationsWithCosts(level) 获取配置与成本
+// - getAdaptiveRoleBodyConfigurations(roomName) 获取房间自适应配置
+// - displayAdaptiveRoleConfigurations(roomName) 显示房间自适应配置
+// - getAllRoomsAdaptiveConfigurations()  获取所有房间自适应配置
+// [生成数量管理]
+// - displaySpawnQuantities(level?)       显示生成数量配置
+// - setRoleSpawnQuantity(level, role, count) 设置单个角色数量
+// - setAllRoleSpawnQuantities(level, config)  批量设置角色数量
+// - getRoomCreepCounts(roomName)         获取房间creep统计
+// - checkSpawnNeeds(roomName)            检查房间生成需求
+// - getSpawnPriorityList(roomName)       获取生成优先级列表
+// [系统控制]
+// - run()                                手动运行一次系统
+// - testSpawn(roomName)                  测试特定房间的生成逻辑
+// - getSystemStatus()                    查看系统状态
+// - resetSpawnStats()                    重置生成统计
+// - setLogInterval(interval)             设置日志输出间隔
+// - enableLogging()                      启用详细日志
+// - disableLogging()                     禁用日志输出
+// [帮助]
+// - help(category?)                      显示帮助菜单或分类命令
+// - h(category?)                         快捷帮助
+//
+// 注意：帮助菜单包含详细说明与示例，运行 runGeneralRoom.help("all") 查看全部
+
 // runGeneralRoom.js - 通用房间管理系统
 // General Room Management System
 
@@ -59,17 +104,17 @@ var runGeneralRoom = {
             carrier: 0,         // 运输者数量 - RCL1通常没有Container
             carrierMineral: 0,  // 矿物运输者数量 - RCL1没有矿物开采
             upgrader: 3,        // 升级者数量
-            builder: 2          // 建造者数量
+            builder: 0          // 建造者数量
         },
         
         // RCL2: 开始扩展，但Container可能还未建造
         2: {
             harvester0: 1,      // 采集者0数量
             harvester1: 1,      // 采集者1数量
-            carrier: 2,         // 运输者数量 - RCL2可能还没有Container
+            carrier: 0,         // 运输者数量 - RCL2可能还没有Container
             carrierMineral: 0,  // 矿物运输者数量 - RCL2没有矿物开采
             upgrader: 1,        // 升级者数量
-            builder: 2          // 建造者数量
+            builder: 0          // 建造者数量
         },
         
         // RCL3: 开始使用Container和更复杂的物流
@@ -79,17 +124,17 @@ var runGeneralRoom = {
             carrier: 2,         // 运输者数量 - RCL3开始需要carrier
             carrierMineral: 0,  // 矿物运输者数量 - RCL3还没有矿物开采
             upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            builder: 0          // 建造者数量
         },
         
         // RCL4: 稳定发展阶段
         4: {
             harvester0: 1,      // 采集者0数量
             harvester1: 1,      // 采集者1数量
-            carrier: 2,         // 运输者数量
+            carrier: 3,         // 运输者数量
             carrierMineral: 0,  // 矿物运输者数量 - RCL4还没有矿物开采
             upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            builder: 0          // 建造者数量
         },
         
         // RCL5: 中级发展阶段
@@ -99,7 +144,7 @@ var runGeneralRoom = {
             carrier: 2,         // 运输者数量
             carrierMineral: 0,  // 矿物运输者数量 - RCL5还没有矿物开采
             upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            builder: 0          // 建造者数量
         },
         
         // RCL6: 开始矿物开采，有Extractor和Terminal
@@ -109,7 +154,7 @@ var runGeneralRoom = {
             carrier: 1,         // 运输者数量
             carrierMineral: 1,  // 矿物运输者数量 - RCL6开始矿物开采
             upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            builder: 0          // 建造者数量
         },
         
         // RCL7: 高级发展阶段，多个Spawn
@@ -119,7 +164,7 @@ var runGeneralRoom = {
             carrier: 1,         // 运输者数量
             carrierMineral: 1,  // 矿物运输者数量
             upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            builder: 0          // 建造者数量
         },
         
         // RCL8: 最高等级，资源充足
@@ -129,7 +174,7 @@ var runGeneralRoom = {
             carrier: 1,         // 运输者数量
             carrierMineral: 1,  // 矿物运输者数量
             upgrader: 1,        // 升级者数量
-            builder: 1          // 建造者数量
+            builder: 0          // 建造者数量
         }
     },
 
@@ -190,78 +235,78 @@ var runGeneralRoom = {
             harvester0: [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE],
             // 5 WORK + 1 CARRY + 5 MOVE
             harvester1: [WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE],
-            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY],
-            // 5 CARRY + 5 MOVE
+            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+            // 10 CARRY + 10 MOVE
             carrierMineral: [CARRY, MOVE],
             // 1 CARRY + 1 MOVE
-            upgrader: [MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, CARRY],
-            // 4 WORK + 1 CARRY + 4 MOVE
-            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, CARRY, CARRY],
-            // 3 WORK + 2 CARRY + 5 MOVE
+            upgrader: [MOVE,MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY],
+            // 6 WORK + 1 CARRY + 6 MOVE
+            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY],
+            // 5 WORK + 3 CARRY + 7 MOVE
         },
         
         // RCL5: 1 Spawn(300) + 30 Extensions(50×30=1500) = 1800 energy max per creep
         // RCL5: 1个Spawn(300) + 30个Extensions(50×30=1500) = 单次生产最大1800能量
         5: {
-            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            // 10 WORK + 2 CARRY + 10 MOVE
+            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+            // 10 CARRY + 10 MOVE
+            carrierMineral: [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
+            // 3 CARRY + 3 MOVE
+            upgrader: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY],
             // 6 WORK + 1 CARRY + 6 MOVE
-            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
-            // 6 CARRY + 6 MOVE
-            carrierMineral: [CARRY, MOVE],
-            // 1 CARRY + 1 MOVE
-            upgrader: [MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY],
-            // 5 WORK + 1 CARRY + 5 MOVE
-            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, CARRY, CARRY],
-            // 4 WORK + 2 CARRY + 6 MOVE
+            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY],
+            // 5 WORK + 4 CARRY + 9 MOVE
         },
         
         // RCL6: 1 Spawn(300) + 40 Extensions(50×40=2000) = 2300 energy max per creep
         // RCL6: 1个Spawn(300) + 40个Extensions(50×40=2000) = 单次生产最大2300能量
         6: {
-            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            // 7 WORK + 1 CARRY + 7 MOVE
-            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
-            // 7 CARRY + 7 MOVE
+            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            // 10 WORK + 2 CARRY + 10 MOVE
+            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+            // 10 CARRY + 10 MOVE
             carrierMineral: [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
             // 3 CARRY + 3 MOVE
             upgrader: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY],
             // 6 WORK + 1 CARRY + 6 MOVE
-            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY],
-            // 5 WORK + 2 CARRY + 7 MOVE
+            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY],
+            // 5 WORK + 4 CARRY + 9 MOVE
         },
         
         // RCL7: 1 Spawn(300) + 50 Extensions(100×50=5000) = 5300 energy max per creep
         // RCL7: 1个Spawn(300) + 50个Extensions(100×50=5000) = 单次生产最大5300能量
         7: {
-            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            // 7 WORK + 1 CARRY + 7 MOVE
-            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
-            // 7 CARRY + 7 MOVE
+            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            // 10 WORK + 2 CARRY + 10 MOVE
+            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+            // 10 CARRY + 10 MOVE
             carrierMineral: [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
             // 3 CARRY + 3 MOVE
             upgrader: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY],
             // 6 WORK + 1 CARRY + 6 MOVE
-            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY],
-            // 5 WORK + 2 CARRY + 7 MOVE
+            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY],
+            // 5 WORK + 4 CARRY + 9 MOVE
         },
         
         // RCL8: 1 Spawn(300) + 60 Extensions(200×60=12000) = 12300 energy max per creep
         // RCL8: 1个Spawn(300) + 60个Extensions(200×60=12000) = 单次生产最大12300能量
         8: {
-            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            // 7 WORK + 1 CARRY + 7 MOVE
-            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
-            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
-            // 7 CARRY + 7 MOVE
+            harvester0: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            // 10 WORK + 2 CARRY + 10 MOVE
+            harvester1: [WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE],
+            carrier: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY, CARRY],
+            // 10 CARRY + 10 MOVE
             carrierMineral: [CARRY, CARRY, CARRY, MOVE, MOVE, MOVE],
             // 3 CARRY + 3 MOVE
             upgrader: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, WORK, CARRY],
             // 6 WORK + 1 CARRY + 6 MOVE
-            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY],
-            // 5 WORK + 2 CARRY + 7 MOVE
+            builder: [MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, MOVE, WORK, WORK, WORK, WORK, WORK, CARRY, CARRY, CARRY, CARRY],
+            // 5 WORK + 4 CARRY + 9 MOVE
         }
     },
     
@@ -489,7 +534,10 @@ var runGeneralRoom = {
         
         var spawnNeeds = [];
         var satisfied = [];
-        var targetQuantities = creepCounts.targetQuantities;
+        var room = Game.rooms[roomName];
+        var hasConstructionSites = room.find(FIND_CONSTRUCTION_SITES).length > 0;
+        var targetQuantities = Object.assign({}, creepCounts.targetQuantities);
+        targetQuantities.builder = hasConstructionSites ? Math.max(targetQuantities.builder || 0, 1) : 0;
         
         console.log('🔍 检查房间 ' + roomName + ' (RCL' + creepCounts.controllerLevel + ') 的creep生成需求...');
         console.log('─'.repeat(60));
@@ -1022,6 +1070,19 @@ var runGeneralRoom = {
             return null;
         }
 
+        if (!Memory.rooms[roomName]) {
+            Memory.rooms[roomName] = {};
+        }
+        var creepCountNow = room.find(FIND_MY_CREEPS).length;
+        if (!Memory.rooms[roomName].stagnation) {
+            Memory.rooms[roomName].stagnation = {};
+        }
+        if (creepCountNow > 0) {
+            Memory.rooms[roomName].stagnation.lastNonZeroTick = Game.time;
+        } else if (Memory.rooms[roomName].stagnation.lastNonZeroTick === undefined) {
+            Memory.rooms[roomName].stagnation.lastNonZeroTick = Game.time;
+        }
+
         
         // Initialize room memory for spawn timing if not exists
         // 初始化房间内存用于记录生成时间
@@ -1171,6 +1232,12 @@ var runGeneralRoom = {
         }
         
         return { attempts: attempts, successes: successes };
+    },
+
+    isRoomStagnated: function(roomName) {
+        var m = Memory.rooms && Memory.rooms[roomName] && Memory.rooms[roomName].stagnation;
+        if (!m || m.lastNonZeroTick === undefined) return false;
+        return (Game.time - m.lastNonZeroTick) >= 1500;
     },
 
     // Generate unique creep name

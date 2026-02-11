@@ -86,7 +86,7 @@ module.exports = {
      * 和平模式 - 单个塔楼处理维护工作
      */
     peacefulMode: function(tower) {
-        if (tower.store[RESOURCE_ENERGY] < 0.3 * tower.store.getCapacity(RESOURCE_ENERGY)) {
+        if (tower.store[RESOURCE_ENERGY] < 0.4 * tower.store.getCapacity(RESOURCE_ENERGY)) {
             return;
         }
         const closestDamagedStructure = tower.pos.findClosestByRange(FIND_STRUCTURES, {
